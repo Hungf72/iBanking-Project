@@ -36,17 +36,43 @@
         .right-panel {
             flex: 1;
             display: flex;
-            justify-content: center;
-            align-self: flex-start;
-            padding-top: 120px;        
+            flex-direction: column;
+            padding-top: 50px;        
             background: #fff;
         }
 
         .box{
             width: 100%;
             max-width: 400px;
+            margin: 50px auto;
         }
 
+        .hotline {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            color: #005fa3;
+            margin-left: 22rem;
+            padding: 6px 12px;
+            background: #e6f2ff;
+            border-radius: 25px; 
+            width: fit-content;
+        }
+
+        .hotline i {
+            background: #005fa3;
+            color: white;
+            border-radius: 25px;
+            padding: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .hotline i:hover{
+            text-decoration: underline;
+        }
+        
         .brand {
             text-align: center;
         }
@@ -64,15 +90,20 @@
             margin-bottom: 10px;
         }
 
+        .brand h3{
+            font-size: 20px;
+            color:#555;
+        }
+
         .form-group {
             margin-bottom: 10px;
         }
         
         label {
             display: block;
-            margin-bottom: 3px;
+            margin-bottom: 10px;
             color: #555;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
         }
 
@@ -81,7 +112,7 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 15px;
         }
 
         button {
@@ -103,7 +134,6 @@
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
         
-
         .sub {
             margin-top: 15px;
             display: flex;
@@ -137,6 +167,9 @@
         <div class="left-panel"></div>
 
         <div class="right-panel">
+            <div class="hotline">
+                <i class="fas fa-phone"> HotLine: 1900 365 231</i>
+            </div>
             <div class="box">
                 <div class="brand">
                     <img src="image/IBanking.png">
@@ -147,14 +180,14 @@
     
                     <div class="form-group">
                         <label for="Username">Username</label>
-                        <input type="text" id="username" name="username" required>
+                        <input type="text" id="username" name="username" placeholder="Enter your usename" required>
                     </div>
     
                     <div class="form-group">
                         <label for="Username">Password</label>
     
                         <div style="position: relative;">
-                            <input type="password" id="password" name="password" required>
+                            <input type="password" id="password" name="password" placeholder="Enter your password" required>
                             <i class="fa-solid fa-eye" id="toggle-pwd"></i>
                         </div>
                     </div>
