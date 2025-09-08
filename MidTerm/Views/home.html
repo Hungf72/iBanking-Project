@@ -80,6 +80,45 @@
     .action-btn.pay { 
         background: #28a745; 
     }
+    
+    .controls-row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        padding: 14px 20px;
+    }
+
+    .controls-row label {
+        font-weight: 600;
+        min-width: 160px;
+    }
+    
+    .select-wrap select {
+        width: 120%;
+        padding: 10px 40px 10px 12px;
+        border-radius: 6px;
+        border: 1px solid #d7e0e9;
+        background: #fff;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    @media (max-width: 640px) {
+        .controls-row { 
+            flex-direction: column; 
+            align-items: stretch; 
+            gap: 8px; 
+        }
+
+        .controls-row label { 
+            min-width: 0; 
+        }
+
+        .select-wrap { 
+            min-width: 0; 
+            max-width: none; 
+        }
+    }
 </style>
 <body>
     <div class="topbar-main">
@@ -98,7 +137,17 @@
     <div class="wrapper">
         <div class="page-title fa-pull-right" style="font-weight: 500; font-size: large;">Số dư hiện tại: 100,000,000 VND</div>
     </div>
-    <h2 style="color: gray; padding: 20px 20px;">Thanh toán học phí</h2>
+    <div class="controls-row">
+        <label for="semester-select">Học kỳ | Semester</label>
+        <div class="select-wrap">
+            <select id="semester-select" name="semester">
+                <option value="">--Chọn học kỳ | Choose semester--</option>
+                <option value="2023-1">2023-2024 - Học kỳ 1</option>
+                <option value="2023-2">2023-2024 - Học kỳ 2</option>
+                <option value="2024-1">2024-2025 - Học kỳ 1</option>
+            </select>
+        </div>
+    </div>
     <!-- Table of tuition list -->
     <div style="padding: 0 20px; overflow-x: auto;">
         <table class="tuition-table">
