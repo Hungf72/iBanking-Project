@@ -98,9 +98,26 @@
         padding: 10px 40px 10px 12px;
         border-radius: 6px;
         border: 1px solid #d7e0e9;
-        background: #fff;
+        background: white;
         font-size: 14px;
         cursor: pointer;
+    }
+
+    .search-row { 
+        padding: 8px 20px 0 20px; 
+        display: flex; 
+        gap: 12px; 
+        align-items: center; 
+    }
+
+    .search-row input[type="search"] { 
+        padding: 8px 10px; 
+        border: 1px solid #d7e0e9; 
+        border-radius: 6px; 
+        width: 280px; 
+    }
+    .search-row label { 
+        font-weight: 600; 
     }
 
     @media (max-width: 640px) {
@@ -119,6 +136,7 @@
             max-width: none; 
         }
     }
+    
 </style>
 <body>
     <div class="topbar-main">
@@ -148,7 +166,11 @@
             </select>
         </div>
     </div>
-    <!-- Table of tuition list -->
+    <!-- Search and Table of tuition list -->
+    <div class="search-row">
+        <label for="search-mssv">Tìm MSSV</label>
+        <input type="search" id="search-mssv" placeholder="Nhập mã số sinh viên (ví dụ: 523H0029)">
+    </div>
     <div style="padding: 0 20px; overflow-x: auto;">
         <table class="tuition-table">
             <caption id="tuition-caption">Danh sách học phí</caption>
@@ -174,5 +196,23 @@
             </tbody>
         </table>
     </div>
+    <script>
+        (function(){
+            const input = document.getElementById('search-mssv');
+            const clear = document.getElementById('clear-search');
+            const tbody = document.querySelector('.tuition-table tbody');
+            input.addEventListener('input', function(){
+                const q = this.value.trim().toLowerCase();
+                if (!q) { Array.from(tbody.rows).forEach(r => r.style.display=''); return; }
+                Array.from(tbody.rows).forEach(r => {
+                    const cell = r.cells[1]; // MSSV column
+                    if (!cell) return;
+                    const txt = cell.textContent.trim().toLowerCase();
+                    r.style.display = txt.includes(q) ? '' : 'none';
+                });
+            });
+            clear.addEventListener('click', function(){ input.value=''; input.dispatchEvent(new Event('input')); });
+        })();
+    </script>
 </body>
 </html>
