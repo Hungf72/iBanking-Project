@@ -1,13 +1,13 @@
 use master
 go 
-if exists(select 1 from sysdatabases where name = 'Database')
-    drop database [Database];
+if exists(select 1 from sysdatabases where name = 'FeeDatabase')
+    drop database FeeDatabase;
 go
 
 -- database
-create database [Database]
+create database FeeDatabase
 go 
-use [Database]
+use FeeDatabase
 go
 
 -- table
