@@ -17,6 +17,7 @@ create table Account(
     Pwd nvarchar(100)
 )
 go 
+
 create table Users(
     UserID varchar(100) PRIMARY KEY,
     Fullname varchar(50),
@@ -56,6 +57,12 @@ create table OTP(
     constraint fk_OTP_User FOREIGN KEY(UserID) REFERENCES Account(UserID)
 )
 go
+
+-- insert user data
+insert into Account values('U001','Nguyen Quoc Hung','123')
+
+-- insert user detail data
+insert into Users values('U001',N'Nguyen Quoc Hung','0123456789','123@gmail.com',5000000)
 
 -- proce SearchStudent
 create procedure SearchStudent @SID varchar(50)
