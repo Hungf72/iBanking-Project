@@ -37,14 +37,14 @@
                     $user_result = $user_stmt->get_result();
 
                     if ($user_result->num_rows > 0) {
-                    $user_data = $user_result->fetch_assoc();
-                    $_SESSION['fullname'] = $user_data['Fullname'];
-                    $_SESSION['balance'] = $user_data['AvailableBalance'];
-                }
-                $user_stmt->close();
+                        $user_data = $user_result->fetch_assoc();
+                        $_SESSION['fullname'] = $user_data['Fullname'];
+                        $_SESSION['balance'] = $user_data['AvailableBalance'];
+                    }
+                    $user_stmt->close();
 
-                echo "Login successful. Welcome, " . htmlspecialchars($username) . "!";
-                exit();
+                    echo "Login successful. Welcome, " . htmlspecialchars($username) . "!";
+                    exit();
                 } else {
                     echo "Invalid password.";
                 }
