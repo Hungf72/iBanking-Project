@@ -157,21 +157,22 @@
     </div>
     <div class="wrapper">
         <div class="page-title fa-pull-right" style="font-weight: 500; font-size: large;">Số dư hiện tại: 100,000,000 VND</div>
-    </div>
+
     <div class="controls-row">
         <label for="semester-select">Học kỳ | Semester</label>
         <div class="select-wrap">
             <select id="semester-select" name="semester">
                 <option value="">--Chọn học kỳ | Choose semester--</option>
-                <option value="2023-1">2023-2024 - Học kỳ 1</option>
-                <option value="2023-2">2023-2024 - Học kỳ 2</option>
-                <option value="2024-1">2024-2025 - Học kỳ 1</option>
+                <option value="2023-1">Học kỳ 1/ 2023 - 2024 | 1st Semester/ 2023 - 2024</option>
+                <option value="2023-2">Học kỳ 2/ 2023 - 2024 | 2nd Semester/ 2023 - 2024</option>
+                <option value="2024-1">Học kỳ 1/ 2024 - 2025 | 1st Semester/ 2024 - 2025</option>
+                <option value="2024-1">Học kỳ 2/ 2024 - 2025 | 2nd Semester/ 2024 - 2025</option>
             </select>
         </div>
     </div>
     <!-- Search and Table of tuition list -->
     <div class="search-row">
-        <label for="search-mssv">Tìm MSSV</label>
+        <label for="search-mssv">Tra cứu MSSV</label>
         <input type="search" id="search-mssv" placeholder="Nhập mã số sinh viên (ví dụ: 523H0029)">
     </div>
     <div style="padding: 0 20px; overflow-x: auto;">
@@ -179,19 +180,21 @@
             <caption id="tuition-caption">Danh sách học phí</caption>
             <thead>
                 <tr>
-                    <th>STT</th>
-                    <th>MSSV</th>
-                    <th>Học kỳ</th>
-                    <th>Ngày đến hạn</th>
-                    <th>Số tiền</th>
-                    <th>Miễn giảm</th>
-                    <th>Tổng phải nộp</th>
-                    <th>Đã nộp</th>
-                    <th>Còn nợ</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th style="text-align: center;">STT</th>
+                    <th style="text-align: center;">MSSV<br>(Student Code)</th>
+                    <th style="text-align: center;">Ngày đến hạn</th>
+                    <th style="text-align: center;">Học phí học kỳ<br>(Semester Tuition)</th>
+                    <th style="text-align: center;">Miễn giảm<br>(Reduction)</th>
+                    <th style="text-align: center;">Tổng học phí phải nộp<br>(Total tuition unpaid)</th>
+                    <th style="text-align: center;">Tổng học phí đã nộp<br>(Total tuition paid)</th>
+                    <th style="text-align: center;">Số tiền còn phải nộp<br>(Remaining upaid tuition)</th>
+                    <th style="text-align: center;">Ghi chú<br>(Note)</th>
                 </tr>
             </thead>
+            <thead>
+
+            </thead>
+
             <tbody>
                 <tr>
 
