@@ -1,0 +1,30 @@
+{
+  "name": "ibanking-project",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Hungf72/iBanking-Project#readme",
+  "bugs": {
+    "url": "https://github.com/Hungf72/iBanking-Project/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hungf72/iBanking-Project.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "s": "node server.js"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "dotenv": "^17.2.2",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "mysql2": "^3.15.0",
+    "nodemon": "^3.1.10"
+  }
+}
