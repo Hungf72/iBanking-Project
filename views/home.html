@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body, html {
+        width: 100%;
+        height: 100%;
+        font-family: Arial, sans-serif;
+        background: #f7f9fb;
+        color: #333;
+    }
+
+    .topbar-main {
+        height: 50px;
+        width: 100%;
+        background-color: #005fa3;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        color: white;
+    }
+    
+    .wrapper {
+        padding: 15px;
+        height: 50px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .tuition-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+    .tuition-table th,
+    .tuition-table td {
+        border: 1px solid #e6e9ee;
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .tuition-table thead th {
+        background: linear-gradient(180deg, #f3f6fb, #eaf2fb);
+        color: #1a3958;
+        font-weight: 600;
+    }
+    
+    .tuition-table tbody tr:hover {
+        background: #f1f9ff;
+    }
+
+    .tuition-table caption {
+        text-align: left;
+        font-weight: 600;
+        padding: 8px 0;
+        color: #123;
+    }
+
+    .action-btn {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        color: white;
+        background: blue;
+    }
+
+    .action-btn.pay { 
+        background: #28a745; 
+    }
+    
+    .controls-row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        padding: 14px 20px;
+    }
+
+    .controls-row label {
+        font-weight: 600;
+        min-width: 160px;
+    }
+    
+    .select-wrap select {
+        width: 120%;
+        padding: 10px 40px 10px 12px;
+        border-radius: 6px;
+        border: 1px solid #d7e0e9;
+        background: white;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .search-row { 
+        padding: 8px 20px 0 20px; 
+        display: flex; 
+        gap: 12px; 
+        align-items: center; 
+    }
+
+    .search-row input[type="search"] { 
+        padding: 8px 10px; 
+        border: 1px solid #d7e0e9; 
+        border-radius: 6px; 
+        width: 280px; 
+    }
+
+    .search-row label { 
+        font-weight: 600; 
+    }
+
+    @media (max-width: 640px) {
+        .controls-row { 
+            flex-direction: column; 
+            align-items: stretch; 
+            gap: 8px; 
+        }
+
+        .controls-row label { 
+            min-width: 0; 
+        }
+
+        .select-wrap { 
+            min-width: 0; 
+            max-width: none; 
+        }
+    }
+    
+</style>
+<body>
+    <div class="topbar-main">
+        <a id="menu-toggle" href="#" class=" " style="color: white;"><i class="fa fa-bars"></i></a>
+        <!-- Right side of the topbar menu -->
+        <div class="ml-auto" style="margin-left: auto;">
+            <a href="#" style="color: white; text-decoration: none; margin-right: 20px;">
+                <i class="fa fa-user"></i> Profile
+            </a>
+        </div>
+        <div class="hotline">
+            <i class="fa fa-phone"></i>
+            <span>Hotline: 1900 1009</span>
+        </div>
+    </div>
+    <div class="wrapper">
+        <div class="page-title fa-pull-right" style="font-weight: 500; font-size: large;">Số dư hiện tại: 100,000,000 VND</div>
+    </div>
+    <div class="controls-row">
+        <label for="semester-select">Học kỳ | Semester</label>
+        <div class="select-wrap">
+            <select id="semester-select" name="semester">
+                <option value="">--Chọn học kỳ | Choose semester--</option>
+                <option value="2023-1">2023-2024 - Học kỳ 1</option>
+                <option value="2023-2">2023-2024 - Học kỳ 2</option>
+                <option value="2024-1">2024-2025 - Học kỳ 1</option>
+            </select>
+        </div>
+    </div>
+    <!-- Search and Table of tuition list -->
+    <div class="search-row">
+        <label for="search-mssv">Tìm MSSV</label>
+        <input type="search" id="search-mssv" placeholder="Nhập mã số sinh viên (ví dụ: 523H0029)">
+    </div>
+    <div style="padding: 0 20px; overflow-x: auto;">
+        <table class="tuition-table">
+            <caption id="tuition-caption">Danh sách học phí</caption>
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>MSSV</th>
+                    <th>Học kỳ</th>
+                    <th>Ngày đến hạn</th>
+                    <th>Số tiền</th>
+                    <th>Miễn giảm</th>
+                    <th>Tổng phải nộp</th>
+                    <th>Đã nộp</th>
+                    <th>Còn nợ</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        (function(){
+            const input = document.getElementById('search-mssv');
+            const clear = document.getElementById('clear-search');
+            const tbody = document.querySelector('.tuition-table tbody');
+            input.addEventListener('input', function(){
+                const q = this.value.trim().toLowerCase();
+                if (!q) { Array.from(tbody.rows).forEach(r => r.style.display=''); return; }
+                Array.from(tbody.rows).forEach(r => {
+                    const cell = r.cells[1]; // MSSV column
+                    if (!cell) return;
+                    const txt = cell.textContent.trim().toLowerCase();
+                    r.style.display = txt.includes(q) ? '' : 'none';
+                });
+            });
+            clear.addEventListener('click', function(){ input.value=''; input.dispatchEvent(new Event('input')); });
+        })();
+    </script>
+</body>
+</html>
