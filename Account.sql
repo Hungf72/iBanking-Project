@@ -1,4 +1,3 @@
-
 CREATE DATABASE AccountDB;
 USE AccountDB;
 
