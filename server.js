@@ -64,7 +64,7 @@ app.post("/api/login", (req, res) => {
                 console.log(`User ${user.Username} logged in successfully.`);
 
                 // return information user json
-                const sql2 = "select * form Users where UserID = ?";
+                const sql2 = "select * from Users where UserID = ?";
                 accountDB.query(sql2, [user.UserID], (err2, rows) => {
                     if (err2) {
                         console.error("MySQL error:", err2);
