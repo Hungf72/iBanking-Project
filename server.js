@@ -49,7 +49,7 @@ app.post("/api/login", (req, res) => {
         return res.status(400).json({ message: "Username and password are required." });
     }
 
-    const sql = "SELECT UserID, Username, Pwd FROM Account WHERE Username = ?";
+    const sql = "select UserID, Username, Pwd from Account where Username = ?";
     accountDB.query(sql, [username], (err, results) => {  
         if (err) {
             console.error("MySQL error:", err);
@@ -62,10 +62,20 @@ app.post("/api/login", (req, res) => {
                 req.session.userid = user.UserID;
                 req.session.username = user.Username;
                 console.log(`User ${user.Username} logged in successfully.`);
-                return res.json({
-                    message: "Login success",
-                    user: { id: user.UserID, username: user.Username },
-                    token: "fake-jwt-token"
+
+                // return information user json
+                const sql2 = "select * form Users where UserID = ?";
+                accountDB.query(sql2, [user.UserID], (err2, rows) => {
+                    if (err2) {
+                        console.error("MySQL error:", err2);
+                        return res.status(500).json({ message: "Internal server error." });
+                    }
+                    return res.json({
+                        message: "Login success",
+                        user: { id: user.UserID, username: user.Username },
+                        details: rows.length > 0 ? rows[0] : null,
+                        token: "fake-jwt-token"
+                    });
                 });
             } 
             else {
