@@ -37,3 +37,5 @@ DELIMITER ;
 
 insert into Account (Username, Pwd) values ('kylehuynh', '12345');
 
+insert into Users (UserID, Fullname, PhoneNum, Email, AvailableBalance) values 
+('U0001', 'Kyle Huynh', '1234567890', 'kylehuynh@gmail.com', 100000000.00);
