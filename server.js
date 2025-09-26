@@ -8,7 +8,8 @@ const mysql = require("mysql2");
 const app = express();
 
 // Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.set("view engine", "ejs");
@@ -39,48 +40,52 @@ app.use(
     })
 );
 
-// Route login (POST)
-app.post("/login", (req, res) => {
-    const username = req.body.username?.trim();
+// Route login
+app.post("/api/login", (req, res) => {
+    const username = req.body.username;
     const password = req.body.password;
 
     if (!username || !password) {
-        return res.status(401).send("Username and password are required.");
+        return res.status(400).json({ message: "Username and password are required." });
     }
 
     const sql = "SELECT UserID, Username, Pwd FROM Account WHERE Username = ?";
     accountDB.query(sql, [username], (err, results) => {  
         if (err) {
-            console.error(err);
-            return res.status(500).send("Internal server error.");
+            console.error("MySQL error:", err);
+            return res.status(500).json({ message: "Internal server error." });
         }
 
         if (results.length > 0) {
             const user = results[0];
-
             if (password === user.Pwd) {
                 req.session.userid = user.UserID;
                 req.session.username = user.Username;
-
-                return res.redirect("/home");
+                console.log(`User ${user.Username} logged in successfully.`);
+                return res.json({
+                    message: "Login success",
+                    user: { id: user.UserID, username: user.Username },
+                    token: "fake-jwt-token"
+                });
             } 
             else {
-                return res.status(401).send("Invalid password.");
+                return res.status(401).json({ message: "Invalid password" });
             }
-        }
+        } 
         else {
-            return res.send("No user found with that username.");
+            return res.status(404).json({ message: "No user found with that username" });
         }
     });
 });
 
+
 // login page
 app.get("/", (req, res) => {
-    res.redirect("/login");
+    res.redirect("/index");
 });
 
-app.get("/login", (req, res) => {
-    res.render("login", { error: null });
+app.get("/index", (req, res) => {
+    res.render("index", { error: null });
 });
 
 // port
