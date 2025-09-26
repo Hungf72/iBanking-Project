@@ -63,7 +63,7 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <button id="loginBtn" class="px-3 py-2 rounded-md bg-rose-800 text-white font-semibold text-sm">Đăng nhập</button>
+          <button id="loginBtn" class="px-3 py-2 rounded-md btn-rose text-sm">Đăng nhập</button>
           <button id="logoutBtn" class="hidden px-3 py-2 rounded-md bg-rose-600 text-white text-sm">Đăng xuất</button>
         </div>
       </div>
@@ -161,19 +161,22 @@
 
   <!-- Login Modal -->
   <div id="loginModal" class="hidden fixed inset-0 z-50 grid place-items-center p-4">
-    <div class="w-full max-w-md rounded-2xl border border-white/12 bg-slate-900/85 backdrop-blur-2xl p-6 shadow-soft zoom">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-lg font-semibold">Đăng nhập</h3>
-        <button class="close px-2 py-1 rounded-lg border border-white/10 bg-white/10 hover:bg-white/15" data-close>✕</button>
+    <div class="w-full max-w-md modal-card p-6 shadow-soft zoom">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <h3 class="text-lg font-semibold">Đăng nhập</h3>
+          <p class="text-sm text-slate-300/80 mt-1">Đăng nhập để thực hiện thanh toán và quản lý giao dịch.</p>
+        </div>
+        <button class="modal-close-btn" data-close aria-label="Đóng">✕</button>
       </div>
       <label class="text-sm text-slate-300">Tài khoản</label>
-      <input name="username" id="lgUser" type="text" class="mt-1 w-full rounded-xl border border-white/12 bg-slate-900/70 px-3 py-2 outline-none focus:shadow-glow" placeholder="user01">
+      <input name="username" id="lgUser" type="text" class="mt-1 w-full rounded-lg border border-white/12 bg-transparent px-3 py-2 outline-none focus:shadow-glow" placeholder="user01">
       <label class="text-sm text-slate-300 mt-3">Mật khẩu</label>
-      <input name="password" id="lgPass" type="password" class="mt-1 w-full rounded-xl border border-white/12 bg-slate-900/70 px-3 py-2 outline-none focus:shadow-glow" placeholder="123456">
+      <input name="password" id="lgPass" type="password" class="mt-1 w-full rounded-lg border border-white/12 bg-transparent px-3 py-2 outline-none focus:shadow-glow" placeholder="123456">
       <div id="lgErr" class="text-sm text-rose-400 mt-2 min-h-[1.25rem]"></div>
-      <div class="flex justify-end gap-2 mt-4">
-        <button id="fillDemo" class="rounded-xl border border-white/10 bg-white/10 px-4 py-2 hover:bg-white/15">Dùng thử</button>
-        <button type="submit" id="doLogin" class="rounded-xl bg-gradient-to-r from-brand to-emerald-400 px-4 py-2 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon">Đăng nhập</button>
+      <div class="flex justify-end gap-3 mt-4">
+        <button id="fillDemo" class="rounded-lg border border-white/10 bg-white/6 px-4 py-2 hover:bg-white/10">Dùng thử</button>
+        <button type="submit" id="doLogin" class="rounded-lg bg-gradient-to-r from-brand to-emerald-400 px-4 py-2 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon">Đăng nhập</button>
       </div>
     </div>
   </div>
