@@ -36,68 +36,79 @@
 </head>
 <body class="min-h-screen bg-fintech text-slate-100 font-sans antialiased">
 
-  <!-- Header -->
-  <header class="sticky top-0 z-30">
-    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-4">
-      <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-soft px-4 py-3 md:px-5 flex items-center justify-between">
+  <!-- Accessibility: skip link -->
+  <a href="#mainContent" class="sr-only focusable">Skip to main content</a>
+
+  <!-- Top announcement strip (red) -->
+  <div id="topStrip" class="top-strip fixed top-0 left-0 right-0 z-40">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="py-2 text-sm text-white flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-400 to-sky-400 text-black grid place-items-center font-extrabold shadow-neon">iB</div>
-          <div>
-            <div class="text-lg font-extrabold tracking-tight">iBanking Tuition</div>
-            <div class="text-[11px] text-slate-300/75">Thanh toán học phí an toàn</div>
+          <i class="ph ph-megaphone"></i>
+          <span>Chào mừng bạn đến với hệ thống thanh toán online</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main header (white, centered logo + title) -->
+  <header id="mainHeader" class="main-header fixed left-0 right-0 z-30">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between py-6">
+        <div class="flex items-center gap-6">
+          <img src="/image/logo.png" alt="logo" class="h-14 w-auto block">
+          <div class="text-center md:text-left">
+            <div class="text-xl font-extrabold text-slate-900">TRƯỜNG ĐẠI HỌC TÔN ĐỨC THẮNG</div>
+            <div class="text-sm text-slate-600">CỔNG THANH TOÁN TRỰC TUYẾN</div>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="themeToggle" class="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm hover:bg-white/15 transition" title="Đổi giao diện 🌙/☀️">
-            <i class="ph ph-sun text-amber-300"></i>
-          </button>
-          <span class="hidden sm:block text-[11px] text-slate-300/75">API</span>
-          <input id="baseUrl" class="hidden sm:block w-48 rounded-lg border border-white/10 bg-slate-900/70 px-2.5 py-1.5 text-xs outline-none focus:shadow-glow" placeholder="http://localhost:3000">
-          <button id="loginBtn" class="px-3 py-2 rounded-xl bg-gradient-to-r from-brand to-emerald-400 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon text-sm">Đăng nhập</button>
-          <button id="logoutBtn" class="hidden px-3 py-2 rounded-xl bg-rose-500/90 font-semibold text-white hover:bg-rose-500/80 text-sm">Đăng xuất</button>
+        <div class="flex items-center gap-3">
+          <button id="loginBtn" class="px-3 py-2 rounded-md bg-rose-800 text-white font-semibold text-sm">Đăng nhập</button>
+          <button id="logoutBtn" class="hidden px-3 py-2 rounded-md bg-rose-600 text-white text-sm">Đăng xuất</button>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Hero / Search -->
-  <section class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-6">
-    <div class="rounded-3xl border border-white/10 bg-white/10 backdrop-blur-xl shadow-soft pop">
-      <div class="px-6 py-6 sm:px-8 sm:py-8">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-          <div>
-            <h1 class="text-3xl font-extrabold tracking-tight">Tra cứu & thanh toán học phí</h1>
-            <p class="text-slate-300/80 text-sm mt-1">Nhập MSSV để xem số tiền phải nộp và thanh toán trực tuyến qua OTP.</p>
-          </div>
-          <div class="w-full md:w-[460px]">
-            <div class="relative">
-              <i class="ph ph-identification-badge absolute left-3 top-1/2 -translate-y-1/2 text-slate-300/70"></i>
-              <input id="mssv" class="w-full pl-9 pr-32 py-3 rounded-2xl border border-white/10 bg-slate-900/70 outline-none focus:shadow-glow"
-                     placeholder="Nhập MSSV, ví dụ: TDTU0001">
-              <button id="lookupBtn" class="absolute right-1 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-gradient-to-r from-brand to-emerald-400 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon text-sm">
-                <i class="ph ph-magnifying-glass"></i> Tra cứu
-              </button>
-            </div>
-          </div>
+  <!-- Hero: full-width background with left text and right search card -->
+  <section class="hero bg-hero bg-cover bg-center relative" aria-hidden="false">
+    <div class="hero-overlay"></div>
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <!-- Left: large heading and description -->
+        <div class="lg:col-span-7 text-white">
+          <h1 class="text-4xl lg:text-3xl font-extrabold tracking-tight">HỆ THỐNG THANH TOÁN TRỰC TUYẾN - TDTU</h1>
+          <div class="w-200 h-0.5 bg-white/70 my-6"></div>
+          <p class="text-lg text-white/85 leading-relaxed">Cổng thanh toán trực tuyến sử dụng để người học thanh toán học phí tại trường Đại học Tôn Đức Thắng. Thanh toán an toàn, nhanh chóng, hỗ trợ nhiều hình thức.</p>
+          <ul class="mt-5 space-y-2 text-white/80">
+            <li>• Thanh toán an toàn, nhanh chóng, hỗ trợ nhiều hình thức.</li>
+            <li>• Nộp học phí nhanh chóng, không phải xếp hàng.</li>
+            <li>• Hỗ trợ thẻ ngân hàng (ATM, Visa, Master).</li>
+            <li>• Lưu lịch sử giao dịch, theo dõi dễ dàng.</li>
+          </ul>
         </div>
 
-        <div id="lookupErr" class="text-sm text-rose-400 mt-3 min-h-[1.25rem]"></div>
-
-        <!-- Skeleton -->
-        <div id="skeleton" class="hidden mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="h-12 rounded-xl bg-white/10 shimmer"></div>
-          <div class="h-12 rounded-xl bg-white/10 shimmer"></div>
-          <div class="h-12 rounded-xl bg-white/10 shimmer"></div>
-          <div class="h-12 rounded-xl bg-white/10 shimmer"></div>
+        <!-- Right: dark search card (keeps existing input IDs) -->
+        <div class="lg:col-span-5">
+          <div class="search-card rounded-xl p-6 shadow-neon">
+            <label class="text-sm text-white/80">Tra cứu học phí</label>
+            <div class="mt-3 relative">
+              <i class="ph ph-identification-badge absolute left-4 top-1/2 -translate-y-1/2 text-white/70"></i>
+              <input id="mssv" autofocus class="w-full pl-12 pr-36 py-4 rounded-md border border-white/10 bg-white/5 text-white placeholder-white/70 outline-none" placeholder="Nhập MSSV">
+              <button id="lookupBtn" class="absolute right-1 top-1/2 -translate-y-1/2 h-11 px-6 rounded-md bg-rose-800 text-white font-semibold hover:brightness-95">Tìm kiếm <span class="ml-3">→</span></button>
+            </div>
+            <div id="lookupErr" class="text-sm text-rose-300 mt-3 min-h-[1.25rem]"></div>
+            <!-- hero quick-pay removed as requested -->
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Result & Quick pay -->
+    <!-- Result & Quick pay -->
   <main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Result -->
-    <section class="lg:col-span-2 rounded-3xl border border-white/12 bg-white/10 backdrop-blur-xl shadow-soft pop">
+    <section class="lg:col-span-2 card pop">
       <div class="p-6 sm:p-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold flex items-center gap-2"><i class="ph ph-receipt"></i> Thông tin học phí</h2>
@@ -107,12 +118,12 @@
     </section>
 
     <!-- Quick pay -->
-    <aside class="rounded-3xl border border-white/12 bg-white/10 backdrop-blur-xl shadow-soft pop">
+    <aside class="card pop">
       <div class="p-6 sm:p-8">
         <h3 class="text-lg font-semibold flex items-center gap-2"><i class="ph ph-lightning"></i> Thanh toán nhanh</h3>
         <p class="text-slate-300/80 text-sm mt-1">Dùng kết quả tra cứu hiện tại để thực hiện thanh toán OTP.</p>
         <div class="mt-4">
-          <button id="payBtn" class="w-full rounded-2xl bg-gradient-to-r from-brand to-emerald-400 px-5 py-3 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon">
+          <button id="payBtn" class="w-full btn-rose">
             <i class="ph ph-credit-card"></i> Thanh toán ngay
           </button>
           <div id="payErr" class="text-sm text-rose-400 min-h-[1.25rem] mt-2"></div>
@@ -184,29 +195,56 @@
     </div>
   </div>
 
+  <!-- Welcome Modal -->
+  <div id="welcomeModal" class="hidden fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" aria-describedby="welcomeDesc">
+    <div class="w-full max-w-4xl rounded-3xl border border-white/8 bg-gradient-to-br from-slate-900/85 to-slate-800/75 backdrop-blur-2xl p-6 md:p-8 shadow-neon zoom">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <!-- Left: Illustration -->
+        <div class="welcome-left rounded-xl overflow-hidden bg-gradient-to-tr from-emerald-600/10 to-sky-400/6 p-1">
+          <img src="/image/Welcome.jpg" alt="Welcome" class="welcome-illustration w-full h-56 md:h-72 object-cover rounded-lg shadow-soft">
+        </div>
+
+        <!-- Right: Content -->
+        <div class="welcome-right text-left">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 id="welcomeTitle" class="text-2xl md:text-3xl font-extrabold">Chào mừng đến với iBanking Tuition</h3>
+              <p id="welcomeDesc" class="text-sm md:text-base text-slate-300/80 mt-2">Tra cứu & thanh toán học phí nhanh chóng, an toàn. Dễ dàng kiểm tra số tiền cần nộp và thực hiện thanh toán trực tuyến qua OTP.</p>
+            </div>
+            <button aria-label="Đóng" class="close ml-4 px-2 py-1 rounded-lg border border-white/10 bg-white/10 hover:bg-white/15" data-close title="Đóng">✕</button>
+          </div>
+
+          <ul class="mt-4 space-y-2 text-sm text-slate-200/85">
+            <li class="flex items-start gap-3"><span class="inline-grid place-items-center text-emerald-300 bg-emerald-500/10 rounded-full w-7 h-7"><i class="ph ph-check-bold"></i></span> Tra cứu theo MSSV — nhanh, chính xác.</li>
+            <li class="flex items-start gap-3"><span class="inline-grid place-items-center text-amber-300 bg-amber-500/10 rounded-full w-7 h-7"><i class="ph ph-lock"></i></span> Thanh toán an toàn bằng OTP.</li>
+            <li class="flex items-start gap-3"><span class="inline-grid place-items-center text-sky-300 bg-sky-500/10 rounded-full w-7 h-7"><i class="ph ph-clock"></i></span> Lưu lịch sử giao dịch nhanh chóng.</li>
+          </ul>
+
+          <div class="mt-6 flex items-center gap-3">
+            <button id="welcomeStart" class="rounded-2xl bg-gradient-to-r from-brand to-emerald-400 px-5 py-3 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon">Bắt đầu</button>
+            <button class="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-slate-200/90 hover:bg-white/10" data-close>Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast" class="fixed bottom-4 right-4 hidden max-w-sm rounded-xl border border-white/10 bg-slate-900/92 backdrop-blur px-4 py-3 text-slate-100 shadow-soft slide-in"></div>
 
   <!-- Logic -->
   <script>
-    // ===== Theme =====
-    (function(){ const saved = localStorage.getItem('theme'); if(saved==='light'){ document.documentElement.classList.remove('dark'); } })();
-    document.getElementById('themeToggle').addEventListener('click', ()=>{
-      const on = document.documentElement.classList.toggle('dark');
-      localStorage.setItem('theme', on ? 'dark' : 'light');
-    });
+    // (theme toggle removed)
 
-    // ===== Globals / State =====
-    const $ = (s,el=document)=>el.querySelector(s);
-    let queued = null;
+  // ===== Globals / State =====
+  const $ = (s,el=document)=>el.querySelector(s);
+  let queued = null;
 
-    const apiInput = $('#baseUrl');
-    const tokenKey='token', userKey='user';
-    const DEFAULT_API='http://localhost:8080';
+  const tokenKey='token', userKey='user';
+  const DEFAULT_API='http://localhost:8080';
 
-    apiInput.value = localStorage.getItem('apiBase') || DEFAULT_API;
-    apiInput.addEventListener('change', ()=> localStorage.setItem('apiBase', api()));
-    function api(){ return (apiInput.value || DEFAULT_API).replace(/\/$/, ''); }
+  // Read API base from localStorage if set, otherwise use default.
+  function api(){ return (localStorage.getItem('apiBase') || DEFAULT_API).replace(/\/$/, ''); }
 
     function token(){ return localStorage.getItem(tokenKey) || '' }
     function setAuth(t,u){ localStorage.setItem(tokenKey,t); localStorage.setItem(userKey,JSON.stringify(u)); renderAuth(); }
@@ -224,9 +262,9 @@
     function toast(text){ const t=$('#toast'); t.textContent=text; t.classList.remove('hidden'); t.classList.add('slide-in'); setTimeout(()=> t.classList.add('hidden'), 2400); }
 
     // ===== Backdrop & Modal =====
-    const backdrop = $('#modalBackDrop');
-    function openModal(sel){ backdrop.classList.remove('hidden'); backdrop.classList.add('flex'); $(sel).classList.remove('hidden'); }
-    function closeAll(){ backdrop.classList.add('hidden'); ['#loginModal','#otpModal'].forEach(id=>$(id).classList.add('hidden')); }
+  const backdrop = $('#modalBackDrop');
+  function openModal(sel){ backdrop.classList.remove('hidden'); backdrop.classList.add('flex'); $(sel).classList.remove('hidden'); }
+  function closeAll(){ backdrop.classList.add('hidden'); ['#loginModal','#otpModal','#welcomeModal'].forEach(id=>$(id).classList.add('hidden')); }
     document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', closeAll));
     backdrop.addEventListener('click', closeAll);
 
@@ -353,6 +391,52 @@
 
     // ===== Login guard =====
     function ensureLoginThen(fn){ if(token()) fn(); else { queued=fn; openModal('#loginModal'); } }
+
+    // ===== Welcome modal (show once) =====
+    (function(){
+      try{
+        const seen = localStorage.getItem('seenWelcome');
+        if(!seen){ // first visit
+          openModal('#welcomeModal');
+          // mark as seen when user interacts
+          const startBtn = $('#welcomeStart');
+          if(startBtn) startBtn.addEventListener('click', ()=>{ localStorage.setItem('seenWelcome','1'); closeAll(); $('#mssv').focus(); });
+          // also close on backdrop/close button (closeAll already marks nothing) but mark seen
+          document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', ()=> localStorage.setItem('seenWelcome','1')));
+          backdrop.addEventListener('click', ()=> localStorage.setItem('seenWelcome','1'));
+        }
+      }catch(e){ /* ignore localStorage errors */ }
+    })();
+    
+    // ===== Header padding sync & shrink on scroll =====
+    (function(){
+      const top = document.getElementById('topStrip');
+      const hdr = document.getElementById('mainHeader');
+      function sync(){
+        try{
+          const topH = top ? top.getBoundingClientRect().height : 0;
+          const hdrH = hdr ? hdr.getBoundingClientRect().height : 0;
+          const total = topH + hdrH;
+          // Apply padding to the document body so the very first sections (hero) are pushed down
+          // keep a small breathing gap (8px) so elements don't touch the header
+          document.body.style.paddingTop = (total - 11) + 'px';
+          if(hdr) hdr.style.top = (topH) + 'px';
+        }catch(e){/* ignore */}
+      }
+      sync();
+      window.addEventListener('resize', sync);
+
+      let lastY=0; const threshold=60;
+      window.addEventListener('scroll', ()=>{
+        const y = window.scrollY || window.pageYOffset;
+        if(!hdr) return;
+        if(y>threshold && y>lastY) hdr.classList.add('shrunk');
+        else if(y<threshold || y<lastY) hdr.classList.remove('shrunk');
+        lastY = y;
+        // re-sync padding so layout doesn't jump
+        sync();
+      }, { passive:true });
+    })();
   </script>
 </body>
 </html>
