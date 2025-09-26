@@ -31,7 +31,7 @@
   <!-- Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <link rel="stylesheet" href="/public/css/style.css">
+  <link rel="stylesheet" href="style.css">
 
 </head>
 <body class="min-h-screen bg-fintech text-slate-100 font-sans antialiased">
@@ -156,13 +156,13 @@
         <button class="close px-2 py-1 rounded-lg border border-white/10 bg-white/10 hover:bg-white/15" data-close>✕</button>
       </div>
       <label class="text-sm text-slate-300">Tài khoản</label>
-      <input id="lgUser" class="mt-1 w-full rounded-xl border border-white/12 bg-slate-900/70 px-3 py-2 outline-none focus:shadow-glow" placeholder="sv01">
+      <input name="username" id="lgUser" type="text" class="mt-1 w-full rounded-xl border border-white/12 bg-slate-900/70 px-3 py-2 outline-none focus:shadow-glow" placeholder="user01">
       <label class="text-sm text-slate-300 mt-3">Mật khẩu</label>
-      <input id="lgPass" type="password" class="mt-1 w-full rounded-xl border border-white/12 bg-slate-900/70 px-3 py-2 outline-none focus:shadow-glow" placeholder="123456">
+      <input name="password" id="lgPass" type="password" class="mt-1 w-full rounded-xl border border-white/12 bg-slate-900/70 px-3 py-2 outline-none focus:shadow-glow" placeholder="123456">
       <div id="lgErr" class="text-sm text-rose-400 mt-2 min-h-[1.25rem]"></div>
       <div class="flex justify-end gap-2 mt-4">
         <button id="fillDemo" class="rounded-xl border border-white/10 bg-white/10 px-4 py-2 hover:bg-white/15">Dùng thử</button>
-        <button id="doLogin" class="rounded-xl bg-gradient-to-r from-brand to-emerald-400 px-4 py-2 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon">Đăng nhập</button>
+        <button type="submit" id="doLogin" class="rounded-xl bg-gradient-to-r from-brand to-emerald-400 px-4 py-2 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon">Đăng nhập</button>
       </div>
     </div>
   </div>
@@ -202,7 +202,7 @@
 
     const apiInput = $('#baseUrl');
     const tokenKey='token', userKey='user';
-    const DEFAULT_API='http://localhost:3000';
+    const DEFAULT_API='http://localhost:8080';
 
     apiInput.value = localStorage.getItem('apiBase') || DEFAULT_API;
     apiInput.addEventListener('change', ()=> localStorage.setItem('apiBase', api()));
@@ -336,7 +336,7 @@
     // ===== Login =====
     $('#loginBtn').addEventListener('click', ()=> openModal('#loginModal'));
     $('#logoutBtn').addEventListener('click', clearAuth);
-    $('#fillDemo').addEventListener('click', ()=>{ $('#lgUser').value='sv01'; $('#lgPass').value='123456'; });
+    $('#fillDemo').addEventListener('click', ()=>{ $('#lgUser').value='user01'; $('#lgPass').value='123456'; });
 
     $('#doLogin').addEventListener('click', async ()=>{
       $('#lgErr').textContent='';
