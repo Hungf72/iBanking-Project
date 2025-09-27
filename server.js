@@ -28,7 +28,22 @@ accountDB.connect((err) => {
         console.error("Lỗi kết nối MySQL:", err);
         return;
     }
-    console.log("Đã kết nối MySQL (XAMPP) thành công!");
+    console.log("Đã kết nối accountDB thành công!");
+});
+
+const feeDB = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "",
+    database: "FeeDB",
+});
+
+feeDB.connect((err) => {
+    if (err) {
+        console.error("Lỗi kết nối MySQL:", err);
+        return;
+    }
+    console.log("Đã kết nối feeDB thành công!");
 });
 
 // Session
@@ -39,6 +54,15 @@ app.use(
         saveUninitialized: true,
     })
 );
+
+// login page
+app.get("/", (req, res) => {
+    res.redirect("/index");
+});
+
+app.get("/index", (req, res) => {
+    res.render("index", { error: null });
+});
 
 // Route login
 app.post("/api/login", (req, res) => {
@@ -88,15 +112,35 @@ app.post("/api/login", (req, res) => {
     });
 });
 
+// look up tuiton
+app.get("/api/students", (req, res) => {
+    const mssv = req.query.mssv;
+    const sql = "select * from Fee where StudentID = ?";
 
-// login page
-app.get("/", (req, res) => {
-    res.redirect("/index");
+    feeDB.query(sql, [mssv], (err, results) => {
+        if (err) {
+            console.error("MySQL error:", err);
+            return res.status(500).json({ message: "Internal server error." });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ message: "Không tìm thấy sinh viên" });
+        }
+
+        const row = results[0];
+        res.json({
+            student: {
+                mssv: row.StudentID,
+                full_name: row.StudentFullname
+            },
+            invoice: {
+                amount_due: row.Fee,
+                amount_paid: row.Fee === 0 ? row.Fee : 0,
+                status: row.State ? "Đã đóng" : "Nợ học phí"
+            }
+        });
+    });
 });
 
-app.get("/index", (req, res) => {
-    res.render("index", { error: null });
-});
 
 // port
 const port = process.env.PORT || 8080;
