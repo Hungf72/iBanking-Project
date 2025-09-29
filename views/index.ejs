@@ -64,7 +64,9 @@
         </div>
         <div class="flex items-center gap-3">
           <button id="loginBtn" class="px-3 py-2 rounded-md btn-rose text-sm">Đăng nhập</button>
-          <button id="logoutBtn" class="hidden px-3 py-2 rounded-md bg-rose-600 text-white text-sm">Đăng xuất</button>
+          <button id="profileBtn" class="hidden p-2 rounded-md bg-brand/20 hover:bg-brand/30 transition-colors" title="Hồ sơ">
+            <i class="ph ph-user-circle text-xl text-emerald-500"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -171,13 +173,7 @@
   <!-- Login Modal -->
   <div id="loginModal" class="hidden fixed inset-0 z-50 grid place-items-center p-4">
     <div class="w-full max-w-md modal-card p-6 shadow-soft zoom">
-      <div class="flex items-start justify-between mb-3">
-        <div>
-          <h3 class="text-lg font-semibold">Đăng nhập</h3>
-          <p class="text-sm text-slate-300/80 mt-1">Đăng nhập để thực hiện thanh toán và quản lý giao dịch.</p>
-        </div>
-        <button class="modal-close-btn" data-close aria-label="Đóng">✕</button>
-      </div>
+
       <label class="text-sm text-slate-300">Tài khoản</label>
       <input name="username" id="lgUser" type="text" class="mt-1 w-full rounded-lg border border-white/12 bg-transparent px-3 py-2 outline-none focus:shadow-glow" placeholder="user01">
       <label class="text-sm text-slate-300 mt-3">Mật khẩu</label>
@@ -186,6 +182,58 @@
       <div class="flex justify-end gap-3 mt-4">
         <button id="fillDemo" class="rounded-lg border border-white/10 bg-white/6 px-4 py-2 hover:bg-white/10">Dùng thử</button>
         <button type="submit" id="doLogin" class="rounded-lg bg-gradient-to-r from-brand to-emerald-400 px-4 py-2 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon">Đăng nhập</button>
+      </div>
+    </div>
+  </div>
+
+  <!--Profile Modal-->
+  <div id="profileModal" class="hidden fixed inset-0 z-50 grid place-items-center p-4">
+    <div class="w-full max-w-md modal-card p-6 shadow-soft zoom">
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-brand/20 rounded-full flex items-center justify-center">
+            <i class="ph ph-user text-xl text-emerald-500"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Hồ sơ người dùng</h3>
+            <p class="text-sm text-slate-300/80">Thông tin tài khoản</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close aria-label="Đóng">✕</button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="p-4 rounded-xl bg-white/5 border border-white/10">
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="text-sm text-slate-300/80">Tên đăng nhập</label>
+              <p id="profileUsername" class="text-white font-medium">-</p>
+            </div>
+            <div>
+              <label class="text-sm text-slate-300/80">Họ và tên</label>
+              <p id="profileFullname" class="text-white font-medium">-</p>
+            </div>
+            <div>
+              <label class="text-sm text-slate-300/80">Email</label>
+              <p id="profileEmail" class="text-white font-medium">-</p>
+            </div>
+            <div>
+              <label class="text-sm text-slate-300/80">Số điện thoại</label>
+              <p id="profilePhone" class="text-white font-medium">-</p>
+            </div>
+            <!-- <div>
+              <label class="text-sm text-slate-300/80">Số dư khả dụng</label>
+              <p id="profileBalance" class="text-white font-medium text-brand">-</p>
+            </div> -->
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button id="profileLogout" class="rounded-lg border border-rose-500/50 bg-rose-500/20 px-4 py-2 text-rose-300 hover:bg-rose-500/30">
+          <i class="ph ph-sign-out mr-2"></i>Đăng xuất
+        </button>
+        <button class="rounded-lg border border-white/10 bg-white/6 px-4 py-2 hover:bg-white/10" data-close>Đóng</button>
       </div>
     </div>
   </div>
@@ -260,8 +308,8 @@
 
     function token(){ return localStorage.getItem(tokenKey) || '' }
     function setAuth(t,u){ localStorage.setItem(tokenKey,t); localStorage.setItem(userKey,JSON.stringify(u)); renderAuth(); }
-    function clearAuth(){ localStorage.removeItem(tokenKey); localStorage.removeItem(userKey); renderAuth(); }
-    function renderAuth(){ const on=!!token(); $('#loginBtn').classList.toggle('hidden',on); $('#logoutBtn').classList.toggle('hidden',!on); }
+    function clearAuth(){ localStorage.removeItem(tokenKey); localStorage.removeItem(userKey); localStorage.removeItem('userDetails'); renderAuth(); }
+    function renderAuth(){ const on=!!token(); $('#loginBtn').classList.toggle('hidden',on); $('#profileBtn').classList.toggle('hidden',!on); }
     renderAuth();
 
     function authFetch(path, opts={}){
@@ -274,9 +322,19 @@
     function toast(text){ const t=$('#toast'); t.textContent=text; t.classList.remove('hidden'); t.classList.add('slide-in'); setTimeout(()=> t.classList.add('hidden'), 2400); }
 
     // ===== Backdrop & Modal =====
-  const backdrop = $('#modalBackDrop');
-  function openModal(sel){ backdrop.classList.remove('hidden'); backdrop.classList.add('flex'); $(sel).classList.remove('hidden'); }
-  function closeAll(){ backdrop.classList.add('hidden'); ['#loginModal','#otpModal','#welcomeModal'].forEach(id=>$(id).classList.add('hidden')); }
+    const backdrop = $('#modalBackDrop');
+
+    function openModal(sel){ 
+      backdrop.classList.remove('hidden'); 
+      backdrop.classList.add('flex'); 
+      $(sel).classList.remove('hidden'); 
+    }
+
+    function closeAll(){ 
+      backdrop.classList.add('hidden'); 
+      ['#loginModal','#otpModal','#welcomeModal','#profileModal'].forEach(id=>$(id).classList.add('hidden')); 
+    }
+
     document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', closeAll));
     backdrop.addEventListener('click', closeAll);
 
@@ -339,7 +397,9 @@
       return 'bg-slate-500 text-white border border-slate-600';
     }    
     
-    function fmt(v){ return (v==null)?'-':Number(v).toLocaleString('vi-VN',{style:'currency',currency:'VND'}); }
+    function fmt(v){ 
+      return (v==null)?'-':Number(v).toLocaleString('vi-VN',{style:'currency',currency:'VND'}); 
+    }
 
     // ===== Pay (prepare + OTP) =====
     let lastPayment = null;
@@ -391,7 +451,6 @@
 
     // ===== Login =====
     $('#loginBtn').addEventListener('click', ()=> openModal('#loginModal'));
-    $('#logoutBtn').addEventListener('click', clearAuth);
     $('#fillDemo').addEventListener('click', ()=>{ $('#lgUser').value='user01'; $('#lgPass').value='123456'; });
 
     $('#doLogin').addEventListener('click', async ()=>{
@@ -401,10 +460,41 @@
         const res = await fetch(api()+'/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         const data = await res.json();
         if(!res.ok) throw new Error(data?.message || 'Đăng nhập thất bại');
+        
+        // Store user details
+        if(data.details) {
+          localStorage.setItem('userDetails', JSON.stringify(data.details));
+        }
+        
         setAuth(data.token, data.user);
-        closeAll(); toast('Đăng nhập thành công');
+        closeAll(); 
+        toast('Đăng nhập thành công');
         if(queued){ const fn=queued; queued=null; fn(); }
       }catch(e){ $('#lgErr').textContent = e.message || 'Lỗi không xác định'; }
+    });
+
+    // ===== Profile Modal =====
+    $('#profileBtn').addEventListener('click', ()=> {
+      // Load user data from localStorage
+      try {
+        const userData = JSON.parse(localStorage.getItem(userKey) || '{}');
+        $('#profileUsername').textContent = userData.username || '-';
+        
+        const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+        $('#profileFullname').textContent = userDetails.Fullname || '-';
+        $('#profileEmail').textContent = userDetails.Email || '-';
+        $('#profilePhone').textContent = userDetails.PhoneNum || '-';
+        // $('#profileBalance').textContent = userDetails.AvailableBalance || '-';
+      } catch(e) {
+        console.error('Error loading user data:', e);
+      }
+      openModal('#profileModal');
+    });
+
+    $('#profileLogout').addEventListener('click', ()=> {
+      clearAuth();
+      closeAll();
+      toast('Đã đăng xuất thành công');
     });
 
     // ===== Login guard =====
@@ -418,7 +508,11 @@
           openModal('#welcomeModal');
           // mark as seen when user interacts
           const startBtn = $('#welcomeStart');
-          if(startBtn) startBtn.addEventListener('click', ()=>{ localStorage.setItem('seenWelcome','1'); closeAll(); $('#mssv').focus(); });
+          if(startBtn) startBtn.addEventListener('click', ()=>{ 
+            localStorage.setItem('seenWelcome','1'); 
+            closeAll(); 
+            $('#mssv').focus(); 
+          });
           // also close on backdrop/close button (closeAll already marks nothing) but mark seen
           document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', ()=> localStorage.setItem('seenWelcome','1')));
           backdrop.addEventListener('click', ()=> localStorage.setItem('seenWelcome','1'));
