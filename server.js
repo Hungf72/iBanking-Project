@@ -4,6 +4,7 @@ const path = require("path");
 require("dotenv").config(); 
 const bodyParser = require("body-parser");
 const mysql = require("mysql2");
+const { randomInt } = require("crypto");
 
 const app = express();
 
@@ -47,13 +48,15 @@ feeDB.connect((err) => {
 });
 
 // Session
-app.use(
-    session({
-        secret: "secret-key", 
-        resave: false,
-        saveUninitialized: true,
-    })
-);
+app.use(session({
+    secret: "my-secret",            
+    resave: false,
+    saveUninitialized: true,         
+    cookie: {
+      secure: false,                 
+      maxAge: 1000 * 60 * 150,     // 15 phút        
+    }
+  }));
 
 // login page
 app.get("/", (req, res) => {
@@ -138,6 +141,48 @@ app.get("/api/students", (req, res) => {
                 status: row.State ? "Đã đóng" : "Nợ học phí"
             }
         });
+    });
+});
+
+// prepare otp
+app.post("/api/payments/prepare", (req, res) => {
+    const mssv = req.body.mssv;
+    
+    if (!mssv) { 
+        return res.status(400).json({ message: "Thiếu MSSV" }); 
+    }
+    console.log(req.session.userid);
+
+    const sql = "select Email from Users where UserID = ?";
+    accountDB.query(sql, [req.session.userid], (err, results) => {
+        if (err) {
+            console.error("MySQL error:", err);
+            return res.status(500).json({ message: "Internal server error." });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: "Không tìm thấy email" });
+        }
+
+        const userEmail = results[0].Email;
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
+
+        
+
+        const payment_id = randomInt(100000, 1000000).toString(); 
+        const otp_id = randomInt(100000, 1000000).toString();     
+
+
+        console.log(payment_id, otp_id);
+
+        if (!req.session.pendingPayments) {
+            req.session.pendingPayments = {};
+        }
+
+        req.session.pendingPayments[payment_id] = { otp, otp_id, mssv };
+
+        console.log(`OTP cho email ${userEmail}: ${otp}`); 
+        res.json({ payment_id, otp_id, message: `OTP đã được gửi tới email ${userEmail}` });
     });
 });
 
