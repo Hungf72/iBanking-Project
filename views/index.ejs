@@ -173,14 +173,22 @@
   <!-- Login Modal -->
   <div id="loginModal" class="hidden fixed inset-0 z-50 grid place-items-center p-4">
     <div class="w-full max-w-md modal-card p-6 shadow-soft zoom">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Đăng nhập</h3>
+        <button class="modal-close-btn" data-close aria-label="Đóng">✕</button>
+      </div>
 
       <label class="text-sm text-slate-300">Tài khoản</label>
       <input name="username" id="lgUser" type="text" class="mt-1 w-full rounded-lg border border-white/12 bg-transparent px-3 py-2 outline-none focus:shadow-glow" placeholder="user01">
       <label class="text-sm text-slate-300 mt-3">Mật khẩu</label>
-      <input name="password" id="lgPass" type="password" class="mt-1 w-full rounded-lg border border-white/12 bg-transparent px-3 py-2 outline-none focus:shadow-glow" placeholder="123456">
+      <div class="relative mt-1">
+        <input name="password" id="lgPass" type="password" class="w-full rounded-lg border border-white/12 bg-transparent px-3 py-2 pr-10 outline-none focus:shadow-glow" placeholder="123456">
+        <button type="button" id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors" title="Hiện/ẩn mật khẩu">
+          <i id="eyeIcon" class="ph ph-eye text-lg"></i>
+        </button>
+      </div>
       <div id="lgErr" class="text-sm text-rose-400 mt-2 min-h-[1.25rem]"></div>
       <div class="flex justify-end gap-3 mt-4">
-        <button id="fillDemo" class="rounded-lg border border-white/10 bg-white/6 px-4 py-2 hover:bg-white/10">Dùng thử</button>
         <button type="submit" id="doLogin" class="rounded-lg bg-gradient-to-r from-brand to-emerald-400 px-4 py-2 font-semibold text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-neon">Đăng nhập</button>
       </div>
     </div>
@@ -208,6 +216,10 @@
             <div>
               <label class="text-sm text-slate-300/80">Tên đăng nhập</label>
               <p id="profileUsername" class="text-white font-medium">-</p>
+            </div>
+            <div>
+              <label class="text-sm text-slate-300/80">User ID</label>
+              <p id="profileUserId" class="text-white font-medium">-</p>
             </div>
             <div>
               <label class="text-sm text-slate-300/80">Họ và tên</label>
@@ -409,8 +421,14 @@
       $('#payErr').textContent='';
       try{
         const mssv = $('#mssv').value.trim();
-        if(!mssv || !lastLookup){ $('#payErr').textContent='Vui lòng tra cứu MSSV trước'; return; }
-        const res = await authFetch('/api/payments/prepare', { method:'POST', body: JSON.stringify({ mssv }) });
+        if(!mssv || !lastLookup){ 
+          $('#payErr').textContent='Vui lòng tra cứu MSSV trước'; 
+          return; 
+        }
+        const res = await authFetch('/api/payments/prepare', { 
+          method:'POST', 
+          body: JSON.stringify({ mssv }) 
+        });
         const data = await res.json();
         if(!res.ok) throw new Error(data?.message || 'Gửi OTP thất bại');
 
@@ -451,13 +469,29 @@
 
     // ===== Login =====
     $('#loginBtn').addEventListener('click', ()=> openModal('#loginModal'));
-    $('#fillDemo').addEventListener('click', ()=>{ $('#lgUser').value='user01'; $('#lgPass').value='123456'; });
+
+    // Password toggle
+    $('#togglePassword').addEventListener('click', ()=> {
+      const passwordInput = $('#lgPass');
+      const eyeIcon = $('#eyeIcon');
+      const isPassword = passwordInput.type === 'password';
+      
+      passwordInput.type = isPassword ? 'text' : 'password';
+      eyeIcon.className = isPassword ? 'ph ph-eye-slash text-lg' : 'ph ph-eye text-lg';
+    });
 
     $('#doLogin').addEventListener('click', async ()=>{
       $('#lgErr').textContent='';
       try{
-        const payload={ username: $('#lgUser').value.trim(), password: $('#lgPass').value };
-        const res = await fetch(api()+'/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const payload={ 
+          username: $('#lgUser').value.trim(), 
+          password: $('#lgPass').value 
+        };
+        const res = await fetch(api()+'/api/login', { 
+          method:'POST', 
+          headers:{'Content-Type':'application/json'}, 
+          body: JSON.stringify(payload) 
+        });
         const data = await res.json();
         if(!res.ok) throw new Error(data?.message || 'Đăng nhập thất bại');
         
@@ -479,6 +513,7 @@
       try {
         const userData = JSON.parse(localStorage.getItem(userKey) || '{}');
         $('#profileUsername').textContent = userData.username || '-';
+        $('#profileUserId').textContent = userData.id || '-';
         
         const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
         $('#profileFullname').textContent = userDetails.Fullname || '-';
