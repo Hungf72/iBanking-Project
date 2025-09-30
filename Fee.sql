@@ -9,6 +9,16 @@ CREATE TABLE Fee (
     State boolean DEFAULT FALSE
 );
 
+-- Bản thông tin giao dịch
+CREATE TABLE TransactionInfo (
+    TransactionID INT AUTO_INCREMENT PRIMARY KEY,
+    StudentFullname VARCHAR(100),
+    TransactionDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    State BOOLEAN DEFAULT FALSE,
+    Amount DECIMAL(15,2) CHECK (Amount >= 0.0),
+    Foreign KEY (StudentFullname) REFERENCES Fee(StudentFullname)
+);
+
 DELIMITER $$
 CREATE TRIGGER trg_fee_state_insert
 BEFORE INSERT ON Fee
