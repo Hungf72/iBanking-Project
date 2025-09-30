@@ -5,6 +5,8 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const mysql = require("mysql2");
 const { randomInt } = require("crypto");
+const nodemailer = require("nodemailer");
+const fs = require("fs");
 
 const app = express();
 
@@ -16,7 +18,9 @@ app.use(express.static(path.join(__dirname, "public")));
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
+
 // connection
+// account
 const accountDB = mysql.createConnection({
     host: "localhost",
     user: "root",
@@ -32,6 +36,7 @@ accountDB.connect((err) => {
     console.log("Đã kết nối accountDB thành công!");
 });
 
+// fee
 const feeDB = mysql.createConnection({
     host: "localhost",
     user: "root",
@@ -45,6 +50,22 @@ feeDB.connect((err) => {
         return;
     }
     console.log("Đã kết nối feeDB thành công!");
+});
+
+// otp
+const otpDB = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "",
+    database: "OtpDB",
+});
+
+otpDB.connect((err) => {
+    if (err) {
+        console.error("Lỗi kết nối MySQL:", err);
+        return;
+    }
+    console.log("Đã kết nối otpDB thành công!");
 });
 
 // Session
@@ -151,7 +172,6 @@ app.post("/api/payments/prepare", (req, res) => {
     if (!mssv) { 
         return res.status(400).json({ message: "Thiếu MSSV" }); 
     }
-    console.log(req.session.userid);
 
     const sql = "select Email from Users where UserID = ?";
     accountDB.query(sql, [req.session.userid], (err, results) => {
@@ -166,26 +186,52 @@ app.post("/api/payments/prepare", (req, res) => {
 
         const userEmail = results[0].Email;
         const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
-
-        
-
         const payment_id = randomInt(100000, 1000000).toString(); 
         const otp_id = randomInt(100000, 1000000).toString();     
+        const expiredAt = new Date(Date.now() + 60 * 1000); // 1 phút
 
+        console.log(otp);
 
-        console.log(payment_id, otp_id);
+        const insertSql = "INSERT INTO Otp (OtpID, Email, OtpCode, ExpiredAt) VALUES (?, ?, ?, ?)";
+        otpDB.query(insertSql, [otp_id, userEmail, otp, expiredAt], (err2) => {
+            if (err2) {
+                console.error("MySQL error:", err2);
+                return res.status(500).json({ message: "Không lưu được OTP" });
+            }
 
-        if (!req.session.pendingPayments) {
-            req.session.pendingPayments = {};
-        }
+            // Gửi email OTP
+            const template = fs.readFileSync(path.join(__dirname, "views", "otpEmail.html"), "utf8");
+            const htmlContent = template.replace("{{OTP_CODE}}", otp);
 
-        req.session.pendingPayments[payment_id] = { otp, otp_id, mssv };
+            // Gửi email
+            const transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+            });
 
-        console.log(`OTP cho email ${userEmail}: ${otp}`); 
-        res.json({ payment_id, otp_id, message: `OTP đã được gửi tới email ${userEmail}` });
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: userEmail,
+                subject: "Mã OTP thanh toán học phí",
+                html: htmlContent,
+            };
+
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error("Lỗi gửi email:", error);
+                    return res.status(500).json({ message: "Không gửi được OTP qua email" });
+                }
+                res.json({
+                    payment_id,
+                    message: `OTP đã được gửi tới email ${userEmail}`
+                });
+            });
+        });
     });
 });
-
 
 // port
 const port = process.env.PORT || 8080;

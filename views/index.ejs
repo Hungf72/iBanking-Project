@@ -433,7 +433,7 @@
         if(!res.ok) throw new Error(data?.message || 'Gửi OTP thất bại');
 
         lastPayment = { id: data.payment_id, otp_id: data.otp_id };
-        $('#otpHint').textContent = `Nhập OTP cho giao dịch #${data.payment_id}. otp_id=${data.otp_id}.`;
+        $('#otpHint').textContent = `Nhập OTP cho giao dịch #${data.payment_id}.`;
         openModal('#otpModal');
         toast('Đã gửi OTP tới email');
       }catch(e){ $('#payErr').textContent = e.message || 'Lỗi không xác định'; }
