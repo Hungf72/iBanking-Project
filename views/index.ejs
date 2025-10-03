@@ -64,9 +64,15 @@
         </div>
         <div class="flex items-center gap-3">
           <button id="loginBtn" class="px-3 py-2 rounded-md btn-rose text-sm">Đăng nhập</button>
-          <button id="profileBtn" class="hidden p-2 rounded-md bg-brand/20 hover:bg-brand/30 transition-colors" title="Hồ sơ">
-            <i class="ph ph-user-circle text-xl text-emerald-500"></i>
-          </button>
+          <div class="hidden items-center gap-2" id="profileSection">
+            <div class="text-right">
+              <div class="text-sm font-medium text-slate-900">Số dư khả dụng</div>
+              <div id="headerBalance" class="text-lg font-bold text-brand">-</div>
+            </div>
+            <button id="profileBtn" class="p-2 rounded-md bg-brand/20 hover:bg-brand/30 transition-colors" title="Hồ sơ">
+              <i class="ph ph-user-circle text-xl text-emerald-500"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -321,7 +327,16 @@
     function token(){ return localStorage.getItem(tokenKey) || '' }
     function setAuth(t,u){ localStorage.setItem(tokenKey,t); localStorage.setItem(userKey,JSON.stringify(u)); renderAuth(); }
     function clearAuth(){ localStorage.removeItem(tokenKey); localStorage.removeItem(userKey); localStorage.removeItem('userDetails'); renderAuth(); }
-    function renderAuth(){ const on=!!token(); $('#loginBtn').classList.toggle('hidden',on); $('#profileBtn').classList.toggle('hidden',!on); }
+    function renderAuth(){ 
+      const on=!!token(); 
+      $('#loginBtn').classList.toggle('hidden',on); 
+      $('#profileSection').classList.toggle('hidden',!on);
+      $('#profileSection').classList.toggle('flex',on);
+      
+      if(on) {
+        updateHeaderBalance();
+      }
+    }
     renderAuth();
 
     function authFetch(path, opts={}){
@@ -508,6 +523,16 @@
     });
 
     // ===== Profile Modal =====
+    function updateHeaderBalance() {
+      try {
+        const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+        const balance = userDetails.AvailableBalance;
+        $('#headerBalance').textContent = balance ? fmt(balance) : '-';
+      } catch(e) {
+        $('#headerBalance').textContent = '-';
+      }
+    }
+
     $('#profileBtn').addEventListener('click', ()=> {
       // Load user data from localStorage
       try {
@@ -519,7 +544,10 @@
         $('#profileFullname').textContent = userDetails.Fullname || '-';
         $('#profileEmail').textContent = userDetails.Email || '-';
         $('#profilePhone').textContent = userDetails.PhoneNum || '-';
-        // $('#profileBalance').textContent = userDetails.AvailableBalance || '-';
+        $('#profileBalance').textContent = userDetails.AvailableBalance ? fmt(userDetails.AvailableBalance) : '-';
+        
+        // Update header balance as well
+        updateHeaderBalance();
       } catch(e) {
         console.error('Error loading user data:', e);
       }
