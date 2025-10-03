@@ -20,6 +20,17 @@ CREATE TABLE Users (
     CONSTRAINT fk_UserID FOREIGN KEY (UserID) REFERENCES Account(UserID)
 );
 
+-- Bản thông tin giao dịch
+CREATE TABLE TransactionInfo (
+    TransactionID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID VARCHAR(100),
+    TransactionDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    StudentID VARCHAR(50),
+    Amount DECIMAL(15,2) CHECK (Amount >= 0.0),
+    State BOOLEAN DEFAULT FALSE,
+    CONSTRAINT fk_Transaction_UserID FOREIGN KEY (UserID) REFERENCES Account(UserID)
+);
+
 DELIMITER $$
 CREATE TRIGGER autoUSI
 BEFORE INSERT ON Account
@@ -38,4 +49,4 @@ DELIMITER ;
 insert into Account (Username, Pwd) values ('kylehuynh', '12345');
 
 insert into Users (UserID, Fullname, PhoneNum, Email, AvailableBalance) values 
-('U0001', 'Kyle Huynh', '1234567890', 'kylehuynh@gmail.com', 100000000.00);
+('U0001', 'Kyle Huynh', '1234567890', 'huygia9105@gmail.com', 100000000.00);

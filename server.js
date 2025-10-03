@@ -138,32 +138,40 @@ app.post("/api/login", (req, res) => {
 
 // look up tuiton
 app.get("/api/students", (req, res) => {
-    const mssv = req.query.mssv;
-    const sql = "select * from Fee where StudentID = ?";
+    const mssv = req.query.mssv?.trim();
+
+    if (!mssv) {
+        return res.status(400).json({ message: "Vui lòng nhập MSSV" });
+    }
+
+    const sql = "SELECT * FROM Fee WHERE StudentID = ?";
 
     feeDB.query(sql, [mssv], (err, results) => {
-        if (err) {
-            console.error("MySQL error:", err);
-            return res.status(500).json({ message: "Internal server error." });
-        }
+        if (err) return res.status(500).json({ message: "Internal server error." });
+
         if (results.length === 0) {
-            return res.status(404).json({ message: "Không tìm thấy sinh viên" });
+            return res.json({
+                student: { mssv: "-", full_name: "-" },
+                invoice: { amount_due: 0, amount_paid: 0, status: "Không tìm thấy sinh viên" }
+            });
         }
 
         const row = results[0];
+
         res.json({
             student: {
-                mssv: row.StudentID,
-                full_name: row.StudentFullname
+                mssv: row.StudentID || "-",
+                full_name: row.StudentFullname || "-"
             },
             invoice: {
-                amount_due: row.Fee,
+                amount_due: row.Fee || 0,
                 amount_paid: row.Fee === 0 ? row.Fee : 0,
-                status: row.State ? "Đã đóng" : "Nợ học phí"
+                status: row.State === 1 ? "Đã đóng" : "Nợ học phí"
             }
         });
     });
 });
+
 
 // otp
 app.post("/api/payments/otp", (req, res) => {
@@ -184,10 +192,7 @@ app.post("/api/payments/otp", (req, res) => {
         );
 
         // Kiểm tra OTP chưa hết hạn
-        otpDB.query(
-            "SELECT * FROM Otp WHERE Email = ? AND ExpiredAt > NOW() AND State = FALSE",
-            [userEmail],
-            (err, existingOtp) => {
+        otpDB.query("SELECT * FROM Otp WHERE Email = ? AND ExpiredAt > NOW() AND State = FALSE",[userEmail],(err, existingOtp) => {
                 if (err) return res.status(500).json({ message: "Internal server error" });
 
                 let otp, otp_id, payment_id, expiredAt;
@@ -197,7 +202,8 @@ app.post("/api/payments/otp", (req, res) => {
                     otp_id = existingOtp[0].OtpID;
                     payment_id = randomInt(100000, 1000000).toString();
                     expiredAt = existingOtp[0].ExpiredAt;
-                } else {
+                } 
+                else {
                     otp = Math.floor(100000 + Math.random() * 900000).toString();
                     otp_id = randomInt(100000, 1000000).toString();
                     payment_id = randomInt(100000, 1000000).toString();
@@ -247,7 +253,99 @@ app.post("/api/payments/otp", (req, res) => {
     });
 });
 
+// confirm otp
+app.post("/api/payments/:paymentId/confirm", (req, res) => {
+    const paymentId = req.params.paymentId;
+    const { otp, mssv } = req.body;
+    const otp_id = req.query.otp_id;
 
+    if (!otp_id || !otp || !mssv) {
+        return res.status(400).json({ message: "Thiếu otp hoặc otp_id hoặc mssv" });
+    }
+
+    // Kiểm tra OTP còn hiệu lực
+    otpDB.query("SELECT * FROM Otp WHERE OtpID = ? AND State = FALSE AND ExpiredAt > NOW()",[otp_id],(err, results) => {
+        if (err) return res.status(500).json({ message: "Internal server error" });
+        if (results.length === 0) return res.status(400).json({ message: "OTP không hợp lệ hoặc đã hết hạn" });
+
+        const record = results[0];
+        if (record.OtpCode !== otp) return res.status(400).json({ message: "OTP không đúng" });
+
+        // delete OTP đã sử dụng
+        otpDB.query("Delete From Otp WHERE OtpID = ?",[otp_id],(err) => {
+            if (err) console.error("Lỗi delete OTP đã sử dụng:", err);
+        });
+
+        const email = record.Email;
+
+        // Lấy User từ AccountDB
+        accountDB.query("SELECT UserID, Fullname, AvailableBalance, Email FROM Users WHERE Email = ?",[email],(err, users) => {
+            if (err || users.length === 0) return res.status(404).json({ message: "Không tìm thấy tài khoản" });
+
+            const user = users[0];
+
+            // Lấy Fee từ FeeDB
+            feeDB.query("SELECT Fee FROM Fee WHERE StudentID = ?",[mssv],(err2, fees) => {
+                if (err2 || fees.length === 0) return res.status(404).json({ message: "Không tìm thấy học phí sinh viên" });
+
+                const feeAmount = Number(fees[0].Fee);
+                const balance = Number(user.AvailableBalance);
+
+                if (balance < feeAmount) return res.status(400).json({ message: "Số dư không đủ để thanh toán" });
+
+                const newBalance = balance - feeAmount;
+
+                // insert transaction
+                accountDB.query("INSERT INTO TransactionInfo (TransactionID, UserID, TransactionDate, StudentID, Amount, State) VALUES (?, ?, Now(), ?, ?, True)",[paymentId ,user.UserID, mssv, feeAmount],(errTr, resultTr) => {
+                    if (errTr) return res.status(500).json({ message: "Tạo giao dịch thất bại" });
+
+                    const transactionId = resultTr.insertId;
+                    // update fee
+                    feeDB.query("UPDATE Fee SET Fee = 0 WHERE StudentID = ?",[mssv],(errFee) => {
+                        if (errFee) return res.status(500).json({ message: "Cập nhật học phí thất bại" });
+
+                        // update balance
+                        accountDB.query("UPDATE Users SET AvailableBalance = ? WHERE UserID = ?",[newBalance, user.UserID],(errAcc) => {
+                            if (errAcc) return res.status(500).json({ message: "Cập nhật số dư thất bại" });
+
+                            // commit transaction
+                            accountDB.commit(errCommit => {
+                                if (errCommit) return res.status(500).json({ message: "Commit thất bại" });
+                                return res.json({
+                                    message: "Thanh toán thành công",
+                                    amount: feeAmount,
+                                    newBalance,
+                                    transactionId
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+});
+
+// get transactions
+app.get("/api/transactions/:userId", (req, res) => {
+    const userId = req.params.userId;
+
+    accountDB.query("SELECT * FROM TransactionInfo WHERE UserID = ? ORDER BY TransactionDate DESC",[userId],(err, results) => {
+        if (err) return res.status(500).json({ message: "Lỗi truy vấn giao dịch" });
+        res.json(results);
+    });
+});
+
+// get balance
+app.get("/api/balance/:userId", (req, res) => {
+    const userId = req.params.userId;
+
+    accountDB.query("SELECT AvailableBalance FROM Users WHERE UserID = ?",[userId],(err, results) => {
+        if (err) return res.status(500).json({ message: "Lỗi truy vấn số dư" });
+        if (results.length === 0) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+        res.json({ availableBalance: results[0].AvailableBalance });
+    });
+});
 
 // port
 const port = process.env.PORT || 8080;

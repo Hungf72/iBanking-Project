@@ -224,10 +224,6 @@
               <p id="profileUsername" class="text-white font-medium">-</p>
             </div>
             <div>
-              <label class="text-sm text-slate-300/80">User ID</label>
-              <p id="profileUserId" class="text-white font-medium">-</p>
-            </div>
-            <div>
               <label class="text-sm text-slate-300/80">Họ và tên</label>
               <p id="profileFullname" class="text-white font-medium">-</p>
             </div>
@@ -339,23 +335,80 @@
 
   const tokenKey='token', userKey='user';
   const DEFAULT_API='http://localhost:8080';
+  
+  // load transaction
+  async function loadTransactions(userId) {
+    try {
+      const res = await authFetch(`/api/transactions/${userId}`);
+      const transactions = await res.json();
+  
+      const tbody = document.getElementById("recentTbody");
+      tbody.innerHTML = '';
+  
+      transactions.forEach(tx => {
+        const tr = document.createElement("tr");
+  
+        const stateClass = tx.State 
+          ? "text-green-300 border-green-300/30 bg-green-300/10"   // Đã thanh toán
+          : "text-yellow-300 border-yellow-300/30 bg-yellow-300/10"; // Chưa xử lý
+  
+        const stateText = tx.State ? "Đã thanh toán" : "Chưa xử lý";
+  
+        tr.innerHTML = `
+          <td class="py-2">${new Date(tx.TransactionDate).toLocaleString('vi-VN')}</td>
+          <td class="py-2">${tx.StudentID}</td>
+          <td class="py-2">${fmt(tx.Amount)}</td>
+          <td class="py-2">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border ${stateClass}">
+              ${stateText}
+            </span>
+          </td>
+        `;
+  
+        tbody.appendChild(tr);
+      });
+    } catch (e) {
+      console.error("Lỗi tải giao dịch:", e);
+    }
+  }
 
   // Read API base from localStorage if set, otherwise use default.
   function api(){ return (localStorage.getItem('apiBase') || DEFAULT_API).replace(/\/$/, ''); }
 
     function token(){ return localStorage.getItem(tokenKey) || '' }
-    function setAuth(t,u){ localStorage.setItem(tokenKey,t); localStorage.setItem(userKey,JSON.stringify(u)); renderAuth(); }
+    function setAuth(t, u) {
+      localStorage.setItem(tokenKey, t);
+      localStorage.setItem(userKey, JSON.stringify(u));
+    
+      renderAuth();
+    
+      if (u && u.id) {
+        loadTransactions(u.id); 
+        $('#profileUsername').textContent = u.username || '-';
+        $('#profileFullname').textContent = u.fullname || '-';
+        $('#profileEmail').textContent = u.email || '-';
+        $('#profilePhone').textContent = u.phone || '-';
+      }
+    
+      openModal('#welcomeModal');
+    }
+    
     function clearAuth(){ localStorage.removeItem(tokenKey); localStorage.removeItem(userKey); localStorage.removeItem('userDetails'); renderAuth(); }
     function renderAuth(){ 
-      const on=!!token(); 
-      $('#loginBtn').classList.toggle('hidden',on); 
-      $('#profileSection').classList.toggle('hidden',!on);
-      $('#profileSection').classList.toggle('flex',on);
-      
+      const on = !!token(); 
+      $('#loginBtn').classList.toggle('hidden', on); 
+      $('#profileSection').classList.toggle('hidden', !on);
+      $('#profileSection').classList.toggle('flex', on);
+    
       if(on) {
+        const u = JSON.parse(localStorage.getItem(userKey) || '{}');
+        if (u.id) {
+          loadTransactions(u.id);  
+        }
         updateHeaderBalance();
       }
     }
+    
     renderAuth();
 
     function authFetch(path, opts={}){
@@ -386,44 +439,78 @@
 
     // ===== Lookup Tuition =====
     let lastLookup = null;
-    $('#lookupBtn').addEventListener('click', async ()=>{
+    let currentSID = null;
+    
+    $('#lookupBtn').addEventListener('click', async () => {
       const mssv = $('#mssv').value.trim();
-      $('#lookupErr').textContent=''; $('#result').innerHTML='';
-      if(!mssv){ $('#lookupErr').textContent='Vui lòng nhập MSSV'; return; }
+      $('#lookupErr').textContent = ''; 
+      $('#result').innerHTML = '';
+    
+      if (!mssv) { 
+          $('#lookupErr').textContent = 'Vui lòng nhập MSSV'; 
+          return; 
+      }
+    
       $('#skeleton').classList.remove('hidden');
-
-      try{
-        const res = await authFetch('/api/students?'+new URLSearchParams({ mssv }), { method:'GET' });
-        if(res.status===401){ queued = ()=> $('#lookupBtn').click(); openModal('#loginModal'); return; }
+    
+      try {
+        const res = await authFetch('/api/students?' + new URLSearchParams({ mssv }), { method: 'GET' });
         const data = await res.json();
-        if(!res.ok) throw new Error(data?.message || 'Tra cứu thất bại');
-
+    
+        if (!res.ok) throw new Error(data?.message || 'Tra cứu thất bại');
+    
         lastLookup = data;
+        currentSID = mssv;
+    
+        const student = data.student || { mssv: "-", full_name: "-" };
+        const invoice = data.invoice || { amount_due: 0, amount_paid: 0, status: "-" };
+    
         const html = `
           <div class="border border-white/12 rounded-2xl p-4 bg-white/5">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><span class="text-slate-300/90">MSSV:</span> <b>${data.student.mssv}</b></div>
-              <div><span class="text-slate-300/90">Họ tên:</span> <b>${data.student.full_name}</b></div>
-              <div><span class="text-slate-300/90">Tổng phải nộp:</span> <b>${fmt(data.invoice?.amount_due)}</b></div>
-              <div><span class="text-slate-300/90">Đã nộp:</span> <b>${fmt(data.invoice?.amount_paid)}</b></div>
+              <div><span class="text-slate-300/90">MSSV:</span> <b>${student.mssv}</b></div>
+              <div><span class="text-slate-300/90">Họ tên:</span> <b>${student.full_name}</b></div>
+              <div><span class="text-slate-300/90">Tổng phải nộp:</span> <b>${fmt(invoice.amount_due)}</b></div>
+              <div><span class="text-slate-300/90">Đã nộp:</span> <b>${fmt(invoice.amount_paid)}</b></div>
               <div class="sm:col-span-2">
                 <span class="text-slate-300/90">Trạng thái:</span>
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold shadow-md ${tagColor(data.invoice?.status)}">
-                  ${statusIcon(data.invoice?.status)} ${data.invoice?.status || '-'}
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold shadow-md ${tagColor(invoice.status)}">
+                  ${statusIcon(invoice.status)} ${invoice.status}
                 </span>
               </div>              
             </div>
           </div>`;
+    
         $('#result').innerHTML = html;
-      }catch(e){
+    
+      } catch (e) {
         $('#lookupErr').textContent = e.message || 'Lỗi không xác định';
         lastLookup = null;
-      }
-      finally{
+        currentSID = null;
+      } finally {
         $('#skeleton').classList.add('hidden');
       }
     });
-
+    
+    function renderStudentCard(student, invoice){
+      const template = document.querySelector('#studentCardTemplate').cloneNode(true);
+      template.classList.remove('hidden');
+      template.removeAttribute('id');
+    
+      template.querySelector('[data-field="mssv"]').textContent = student.mssv || '-';
+      template.querySelector('[data-field="full_name"]').textContent = student.full_name || '-';
+      template.querySelector('[data-field="amount_due"]').textContent = fmt(invoice.amount_due);
+      template.querySelector('[data-field="amount_paid"]').textContent = fmt(invoice.amount_paid);
+    
+      const statusEl = template.querySelector('[data-field="status"]');
+      const tag = template.querySelector('.status-tag');
+      statusEl.textContent = invoice.status || '-';
+      tag.className = "status-tag inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold shadow-md " + tagColor(invoice.status);
+      tag.innerHTML = `${statusIcon(invoice.status)} ${invoice.status}`;
+    
+      return template;
+    }
+    
     function statusIcon(txt=''){
       const t = (txt||'').toLowerCase();
       if(t.includes('đã')||t.includes('paid')) return '<i class="ph ph-check-circle"></i>';
@@ -564,7 +651,7 @@
       document.querySelector('#doConfirm').classList.remove("opacity-50", "cursor-not-allowed");
     }
   
-    // Gửi lại OTP
+    // resend OTP
     $('#resendOtp').addEventListener("click", async () => {
       const mssv = $('#mssv').value.trim();
       if (!lastPayment || !mssv) return;
@@ -596,34 +683,48 @@
       }
     });
     
+    // confirm otp
     $('#doConfirm').addEventListener('click', async ()=>{
       $('#otpErr').textContent='';
       try{
-        const code = $('#otpCode').value.trim();
         if(!lastPayment){ $('#otpErr').textContent='Không tìm thấy giao dịch'; return; }
-        const res = await authFetch(`/api/payments/${lastPayment.id}/confirm?`+new URLSearchParams({ otp_id: lastPayment.otp_id }), {
-          method:'POST', body: JSON.stringify({ otp: code })
+    
+        // Lấy mã OTP từ tất cả input
+        const code = Array.from(document.querySelectorAll('.otp-input')).map(i => i.value).join('');
+
+        if(code.length !== 6)
+        {
+          $('#otpErr').textContent='Vui lòng nhập đủ 6 chữ số'; 
+          return; 
+        }
+    
+        const res = await authFetch(`/api/payments/${lastPayment.id}/confirm?`+
+        new URLSearchParams(
+          { otp_id: lastPayment.otp_id }), 
+          {method:'POST', body: JSON.stringify({ otp: code, mssv: currentSID })
         });
+
         const data = await res.json();
-        if(!res.ok) throw new Error(data?.message || 'Xác nhận thất bại');
-        closeAll();
+
+        if(!res.ok){
+          throw new Error(data?.message || 'Xác nhận thất bại');
+        }
+
         toast('Thanh toán thành công!');
-        addRecent($('#mssv').value, fmt(data.amount || lastLookup?.invoice?.amount_due || 0), 'Đã thanh toán');
-      }catch(e){ $('#otpErr').textContent = e.message || 'Lỗi không xác định'; }
+
+        const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+        if(userDetails?.UserID){
+
+          await loadTransactions(userDetails.UserID);
+
+          await updateHeaderBalance();
+        }
+
+        closeAll();
+      } catch(e){ $('#otpErr').textContent = e.message || 'Lỗi không xác định'; }
     });
-
-    function addRecent(mssv, amount, status){
-      const tr=document.createElement('tr'); const now=new Date();
-      tr.innerHTML = `
-        <td class="py-2">${now.toLocaleString('vi-VN')}</td>
-        <td class="py-2">${mssv}</td>
-        <td class="py-2">${amount}</td>
-        <td class="py-2"><span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border ${tagColor(status)}">
-          ${statusIcon(status)} ${status}
-        </span></td>`;
-      $('#recentTbody').prepend(tr);
-    }
-
+    
+  
     // ===== Login =====
     $('#loginBtn').addEventListener('click', ()=> openModal('#loginModal'));
 
@@ -637,6 +738,7 @@
       eyeIcon.className = isPassword ? 'ph ph-eye-slash text-lg' : 'ph ph-eye text-lg';
     });
 
+    // ===== Login =====
     $('#doLogin').addEventListener('click', async ()=>{
       $('#lgErr').textContent='';
       try{
@@ -660,29 +762,48 @@
         setAuth(data.token, data.user);
         closeAll(); 
         toast('Đăng nhập thành công');
+
+        if(data.user?.id) {
+          loadTransactions(data.user.id);
+        }
         if(queued){ const fn=queued; queued=null; fn(); }
       }catch(e){ $('#lgErr').textContent = e.message || 'Lỗi không xác định'; }
     });
 
     // ===== Profile Modal =====
-    function updateHeaderBalance() {
+    async function updateHeaderBalance() {
       try {
         const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
-        const balance = userDetails.AvailableBalance;
-        $('#headerBalance').textContent = balance ? fmt(balance) : '-';
-      } catch(e) {
+        
+        if (!userDetails?.UserID) {
+          $('#headerBalance').textContent = '-';
+          return;
+        }
+    
+        const res = await authFetch(`/api/balance/${userDetails.UserID}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Không lấy được số dư");
+
+        userDetails.AvailableBalance = data.availableBalance;
+        localStorage.setItem('userDetails', JSON.stringify(userDetails));
+        $('#headerBalance').textContent = fmt(data.availableBalance);
+
+
+      } catch (e) {
+        console.error("Lỗi updateHeaderBalance:", e);
         $('#headerBalance').textContent = '-';
       }
     }
+    
 
     $('#profileBtn').addEventListener('click', ()=> {
       // Load user data from localStorage
       try {
         const userData = JSON.parse(localStorage.getItem(userKey) || '{}');
         $('#profileUsername').textContent = userData.username || '-';
-        $('#profileUserId').textContent = userData.id || '-';
-        
+
         const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+
         $('#profileFullname').textContent = userDetails.Fullname || '-';
         $('#profileEmail').textContent = userDetails.Email || '-';
         $('#profilePhone').textContent = userDetails.PhoneNum || '-';
@@ -699,6 +820,7 @@
     $('#profileLogout').addEventListener('click', ()=> {
       clearAuth();
       closeAll();
+      logout();
       toast('Đã đăng xuất thành công');
     });
 
@@ -754,6 +876,44 @@
         sync();
       }, { passive:true });
     })();
+
+    // ===== Logout =====
+    function logout() {
+      try {
+
+        localStorage.clear();
+        const tbody = document.getElementById("recentTbody");
+        if (tbody) tbody.innerHTML = "";
+
+        $('#profileSection').classList.add("hidden");
+        $('#loginBtn').classList.remove("hidden");
+
+        $('#profileUsername').textContent = "-";
+        $('#profileFullname').textContent = "-";
+        $('#profileEmail').textContent = "-";
+        $('#profilePhone').textContent = "-";
+    
+        toast("Đăng xuất thành công");
+      } catch (e) {
+        console.error("Lỗi khi logout:", e);
+      }
+    }
+    
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const userDetails = localStorage.getItem("userDetails");
+      if(userDetails){
+        try {
+          const parsed = JSON.parse(userDetails);
+          if(parsed?.id){
+            loadTransactions(parsed.id);
+          }
+        } catch(e){
+          console.error("Lỗi parse userDetails:", e);
+        }
+      }
+    });
+    
   </script>
 </body>
 </html>
