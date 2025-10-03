@@ -11,3 +11,4 @@ CREATE TABLE Otp (
     State BOOLEAN DEFAULT FALSE
 );
 
+

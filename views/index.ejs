@@ -463,7 +463,7 @@
           return;
         }
 
-        const res = await authFetch('/api/payments/prepare', {
+        const res = await authFetch('/api/payments/otp', {
           method: 'POST',
           body: JSON.stringify({ mssv })
         });
@@ -496,17 +496,22 @@
 
     function startOtpCountdown() {
       clearInterval(otpTimerInterval);
+      unlockOtpInputs();
       otpTimerInterval = setInterval(() => {
         const now = Date.now();
         const diff = otpExpireAt - now;
 
         if (diff <= 0) {
           clearInterval(otpTimerInterval);
-          $('#otpTimer').textContent = "OTP đã hết hạn";
-          $('#doConfirm').disabled = true; 
-          $('#resendOtp').classList.remove("hidden");
+          document.querySelector('#otpTimer').textContent = "Hết hạn";
+          document.querySelector('#otpTimer').classList.replace("text-rose-400", "text-gray-300");
+        
+          lockOtpInputs();
+        
+          document.querySelector('#resendOtp').classList.remove("hidden");
           return;
         }
+        
 
         const sec = Math.floor(diff / 1000);
         $('#otpTimer').textContent = `Còn ${sec}s`;
@@ -541,35 +546,56 @@
       });
     });
 
+    function lockOtpInputs() {
+      document.querySelectorAll('.otp-input').forEach(inp => {
+        inp.readOnly = true;                
+        inp.classList.add("opacity-50");    
+      });
+      document.querySelector('#doConfirm').readOnly = true;
+      document.querySelector('#doConfirm').classList.add("opacity-50", "cursor-not-allowed");
+    }
+    
+    function unlockOtpInputs() {
+      document.querySelectorAll('.otp-input').forEach(inp => {
+        inp.readOnly = false;               
+        inp.classList.remove("opacity-50");
+      });
+      document.querySelector('#doConfirm').readOnly = false;
+      document.querySelector('#doConfirm').classList.remove("opacity-50", "cursor-not-allowed");
+    }
+  
     // Gửi lại OTP
     $('#resendOtp').addEventListener("click", async () => {
-      if (!lastPayment) return;
-
+      const mssv = $('#mssv').value.trim();
+      if (!lastPayment || !mssv) return;
+    
       try {
-        const res = await authFetch('/api/payments/resend', {
+        const res = await authFetch('/api/payments/otp', {
           method: 'POST',
-          body: JSON.stringify({ otp_id: lastPayment.otp_id })
+          body: JSON.stringify({ mssv })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.message || 'Gửi lại OTP thất bại');
-
-        toast('Đã gửi lại OTP tới email');
+    
+        lastPayment = { id: data.payment_id, otp_id: data.otp_id }; // update OTP mới
+    
         $('#otpErr').textContent = "";
         $('#doConfirm').disabled = false;
         $('#resendOtp').classList.add("hidden");
-
+    
         otpExpireAt = Date.now() + 60 * 1000;
         startOtpCountdown();
-
+    
         document.querySelectorAll('.otp-input').forEach(i => i.value = "");
         document.querySelector('.otp-input').focus();
-
+    
+        toast('Đã gửi lại OTP tới email');
+    
       } catch (e) {
         $('#otpErr').textContent = e.message || 'Lỗi không xác định';
       }
     });
-
-
+    
     $('#doConfirm').addEventListener('click', async ()=>{
       $('#otpErr').textContent='';
       try{

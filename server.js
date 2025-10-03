@@ -165,119 +165,88 @@ app.get("/api/students", (req, res) => {
     });
 });
 
-// prepare otp
-// app.post("/api/payments/prepare", (req, res) => {
-//     const mssv = req.body.mssv;
-    
-//     if (!mssv) { 
-//         return res.status(400).json({ message: "Thiếu MSSV" }); 
-//     }
-
-//     const sql = "select Email from Users where UserID = ?";
-//     accountDB.query(sql, [req.session.userid], (err, results) => {
-//         if (err) {
-//             console.error("MySQL error:", err);
-//             return res.status(500).json({ message: "Internal server error." });
-//         }
-
-//         if (results.length === 0) {
-//             return res.status(404).json({ message: "Không tìm thấy email" });
-//         }
-
-//         const userEmail = results[0].Email;
-//         const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
-//         const payment_id = randomInt(100000, 1000000).toString(); 
-//         const otp_id = randomInt(100000, 1000000).toString();     
-//         const expiredAt = new Date(Date.now() + 60 * 1000); // 1 phút
-
-//         console.log(otp);
-
-//         const insertSql = "INSERT INTO Otp (OtpID, Email, OtpCode, ExpiredAt) VALUES (?, ?, ?, ?)";
-//         otpDB.query(insertSql, [otp_id, userEmail, otp, expiredAt], (err2) => {
-//             if (err2) {
-//                 console.error("MySQL error:", err2);
-//                 return res.status(500).json({ message: "Không lưu được OTP" });
-//             }
-
-//             // Gửi email OTP
-//             const template = fs.readFileSync(path.join(__dirname, "views", "otpEmail.html"), "utf8");
-//             const htmlContent = template.replace("{{OTP_CODE}}", otp);
-
-//             // Gửi email
-//             const transporter = nodemailer.createTransport({
-//                 service: "gmail",
-//                 auth: {
-//                     user: process.env.EMAIL_USER,
-//                     pass: process.env.EMAIL_PASS,
-//                 },
-//             });
-
-//             const mailOptions = {
-//                 from: process.env.EMAIL_USER,
-//                 to: userEmail,
-//                 subject: "Mã OTP thanh toán học phí",
-//                 html: htmlContent,
-//             };
-
-//             transporter.sendMail(mailOptions, (error, info) => {
-//                 if (error) {
-//                     console.error("Lỗi gửi email:", error);
-//                     return res.status(500).json({ message: "Không gửi được OTP qua email" });
-//                 }
-//                 res.json({
-//                     payment_id,
-//                     message: `Nhập mã OTP (6 chữ số) vừa được gửi ${userEmail}.`
-//                 });
-//             });
-//         });
-//     });
-// });
-
-app.post("/api/payments/prepare", (req, res) => {
+// otp
+app.post("/api/payments/otp", (req, res) => {
     const mssv = req.body.mssv;
-    if (!mssv) {
-        return res.status(400).json({ message: "Thiếu MSSV" });
-    }
+    if (!mssv) return res.status(400).json({ message: "Thiếu MSSV" });
 
-    const sql = "SELECT Email FROM Users WHERE UserID = ?";
-    accountDB.query(sql, [req.session.userid], (err, results) => {
-        if (err) return res.status(500).json({ message: "Internal server error." });
+    accountDB.query("SELECT Email FROM Users WHERE UserID = ?", [req.session.userid], (err, results) => {
+        if (err) return res.status(500).json({ message: "Internal server error" });
         if (results.length === 0) return res.status(404).json({ message: "Không tìm thấy email" });
 
         const userEmail = results[0].Email;
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const payment_id = randomInt(100000, 1000000).toString();
-        const otp_id = randomInt(100000, 1000000).toString();
-        const expiredAt = Date.now() + 60 * 1000;
 
-        res.json({
-            payment_id,
-            otp_id,
-            expiredAt,
-            message: `Nhập mã OTP (6 chữ số) vừa được gửi ${userEmail}.`
-        });
+        // Xóa OTP hết hạn hoặc đã mark
+        otpDB.query(
+            "DELETE FROM Otp WHERE Email = ? AND (ExpiredAt <= NOW() OR State = TRUE)",
+            [userEmail],
+            (err) => { if (err) console.error("Lỗi xóa OTP hết hạn:", err); }
+        );
 
-        const template = fs.readFileSync(path.join(__dirname, "views", "otpEmail.html"), "utf8");
-        const htmlContent = template.replace("{{OTP_CODE}}", otp);
+        // Kiểm tra OTP chưa hết hạn
+        otpDB.query(
+            "SELECT * FROM Otp WHERE Email = ? AND ExpiredAt > NOW() AND State = FALSE",
+            [userEmail],
+            (err, existingOtp) => {
+                if (err) return res.status(500).json({ message: "Internal server error" });
 
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
+                let otp, otp_id, payment_id, expiredAt;
 
-        transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: userEmail,
-            subject: "Mã OTP thanh toán học phí",
-            html: htmlContent,
-        }).catch(err => {
-            console.error("Lỗi gửi email:", err);
-        });
+                if (existingOtp.length > 0) {
+                    otp = existingOtp[0].OtpCode;
+                    otp_id = existingOtp[0].OtpID;
+                    payment_id = randomInt(100000, 1000000).toString();
+                    expiredAt = existingOtp[0].ExpiredAt;
+                } else {
+                    otp = Math.floor(100000 + Math.random() * 900000).toString();
+                    otp_id = randomInt(100000, 1000000).toString();
+                    payment_id = randomInt(100000, 1000000).toString();
+                    expiredAt = new Date(Date.now() + 60 * 1000);
+
+                    otpDB.query(
+                        "INSERT INTO Otp (OtpID, Email, OtpCode, ExpiredAt) VALUES (?, ?, ?, ?)",
+                        [otp_id, userEmail, otp, expiredAt],
+                        (err2) => { if (err2) console.error("Lỗi lưu OTP:", err2); }
+                    );
+
+                    // Tự động mark State = TRUE sau 60s
+                    const delay = expiredAt.getTime() - Date.now();
+                    setTimeout(() => {
+                        otpDB.query(
+                            "UPDATE Otp SET State = TRUE WHERE OtpID = ?",
+                            [otp_id],
+                            (err3) => { if (err3) console.error("Lỗi mark OTP hết hạn:", err3); }
+                        );
+                    }, delay);
+                }
+
+                // Gửi email OTP
+                const template = fs.readFileSync(path.join(__dirname, "views", "otpEmail.html"), "utf8");
+                const htmlContent = template.replace("{{OTP_CODE}}", otp);
+
+                const transporter = nodemailer.createTransport({
+                    service: "gmail",
+                    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+                });
+
+                transporter.sendMail({
+                    from: process.env.EMAIL_USER,
+                    to: userEmail,
+                    subject: "Mã OTP thanh toán học phí",
+                    html: htmlContent,
+                }).catch(err => console.error("Lỗi gửi email:", err));
+
+                res.json({
+                    payment_id,
+                    otp_id,
+                    expiredAt,
+                    message: `Nhập mã OTP (6 chữ số) vừa được gửi ${userEmail}.`
+                });
+            }
+        );
     });
 });
+
 
 
 // port
