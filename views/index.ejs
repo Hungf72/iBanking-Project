@@ -97,7 +97,7 @@
         </div>
 
         <!-- Right: dark search card (keeps existing input IDs) -->
-        <div class="lg:col-span-5">
+        <div id="student-search" class="lg:col-span-5">
           <div class="search-card rounded-xl p-6 shadow-neon">
             <label class="text-sm text-white/80">Tra cứu học phí</label>
             <div class="mt-3 relative">
@@ -114,7 +114,7 @@
   </section>
 
     <!-- Result & Quick pay -->
-  <main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <main id="student-tuition" class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Result -->
     <section class="lg:col-span-2 card pop">
       <div class="p-6 sm:p-8">
@@ -482,6 +482,8 @@
           </div>`;
     
         $('#result').innerHTML = html;
+
+        smoothScrollTo("student-tuition"); 
     
       } catch (e) {
         $('#lookupErr').textContent = e.message || 'Lỗi không xác định';
@@ -547,6 +549,7 @@
         const mssv = $('#mssv').value.trim();
         if (!mssv || !lastLookup) {
           $('#payErr').textContent = 'Vui lòng tra cứu MSSV trước';
+          smoothScrollTo("student-search");
           return;
         }
 
@@ -718,6 +721,8 @@
           await loadTransactions(userDetails.UserID);
 
           await updateHeaderBalance();
+
+          await refreshLookup();
         }
 
         closeAll();
@@ -898,8 +903,61 @@
         console.error("Lỗi khi logout:", e);
       }
     }
-    
 
+    // ===== refresh lookup =====
+    async function refreshLookup() {
+      try {
+        if (!currentSID) return;
+        $('#result').innerHTML = '';
+        $('#skeleton').classList.remove('hidden');
+    
+        const res = await authFetch('/api/students?' + new URLSearchParams({ mssv: currentSID }), { method: 'GET' });
+        const data = await res.json();
+    
+        if (!res.ok) throw new Error(data?.message || 'Không thể cập nhật thông tin sinh viên');
+    
+        const student = data.student || { mssv: "-", full_name: "-" };
+        const invoice = data.invoice || { amount_due: 0, amount_paid: 0, status: "-" };
+    
+        const html = `
+          <div class="border border-white/12 rounded-2xl p-4 bg-white/5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><span class="text-slate-300/90">MSSV:</span> <b>${student.mssv}</b></div>
+              <div><span class="text-slate-300/90">Họ tên:</span> <b>${student.full_name}</b></div>
+              <div><span class="text-slate-300/90">Tổng phải nộp:</span> <b>${fmt(invoice.amount_due)}</b></div>
+              <div><span class="text-slate-300/90">Đã nộp:</span> <b>${fmt(invoice.amount_paid)}</b></div>
+              <div class="sm:col-span-2">
+                <span class="text-slate-300/90">Trạng thái:</span>
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold shadow-md ${tagColor(invoice.status)}">
+                  ${statusIcon(invoice.status)} ${invoice.status}
+                </span>
+              </div>              
+            </div>
+          </div>`;
+        $('#result').innerHTML = html;
+    
+      } catch (e) {
+        console.error("reloadLookup lỗi:", e);
+      } finally {
+        $('#skeleton').classList.add('hidden');
+      }
+    }
+    
+    function smoothScrollTo(elementId) {
+      const element = document.getElementById(elementId);
+      const header = document.querySelector("header") || document.querySelector("nav");
+    
+      if (element) {
+        const headerHeight = header ? header.offsetHeight : 0; // đo chiều cao header
+        const elementPosition = element.getBoundingClientRect().top + window.scrollY - headerHeight - 15;
+    
+        window.scrollTo({
+          top: elementPosition,
+          behavior: "smooth"
+        });
+      }
+    }
+        
     document.addEventListener("DOMContentLoaded", () => {
       const userDetails = localStorage.getItem("userDetails");
       if(userDetails){
