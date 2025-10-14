@@ -248,6 +248,71 @@
     </div>
   </div>
 
+  <!-- Bank Transfer Modal -->
+  <div id="transferModal" class="hidden fixed inset-0 z-50 grid place-items-center p-4">
+    <div class="w-full max-w-md rounded-2xl border border-white/12 bg-slate-900/90 backdrop-blur-2xl p-6 shadow-2xl zoom">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-semibold">Chuyển tiền tới số tài khoản</h3>
+          <p class="text-sm text-slate-300/80">Vui lòng xác nhận thông tin trước khi tiếp tục</p>
+        </div>
+        <button class="modal-close-btn" data-close aria-label="Đóng">✕</button>
+      </div>
+      
+      <!-- From account -->
+      <div class="mb-5 p-4 rounded-xl border border-white/10 bg-white/5">
+        <div class="text-sm text-slate-300/80">Nguồn chuyển tiền</div>
+        <div>
+          <div class="font-medium">TÀI KHOẢN THANH TOÁN</div>
+          <div class="text-brand text-xl font-bold" id="transferAmount">-</div>
+        </div>
+      </div>
+      
+      <!-- To account -->
+      <div class="mb-5 p-4 rounded-xl border border-white/10 bg-white/5">
+        <div class="text-sm text-slate-300/80">Chuyển đến</div>
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 bg-rose-500/20 rounded-full flex items-center justify-center">
+            <i class="ph ph-bank text-xl text-rose-400"></i>
+          </div>
+          <div>
+            <div class="font-medium">TDTU BANK</div>
+            <div class="text-sm text-slate-300/80">Trường Đại học Tôn Đức Thắng</div>
+          </div>
+        </div>
+        
+        <div class="border-t border-white/10 my-3 pt-3">
+          <div class="flex justify-between mb-1">
+            <div class="text-sm text-slate-300/80">Số tài khoản</div>
+            <div class="font-medium" id="bankAccountNumber">19037000168888</div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-300/80">Tên tài khoản</span>
+            <span class="font-medium">TRUONG DAI HOC TON DUC THANG</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Transfer info -->
+      <div class="mb-5 p-4 rounded-xl border border-white/10 bg-white/5">
+        <div>
+          <div class="text-sm text-slate-300/80">Số tiền chuyển</div>
+          <div class="font-bold text-lg text-white" id="transferAmountValue">-</div>
+        </div>
+        
+        <div class="border-t border-white/10 mt-3 pt-3">
+          <div class="text-sm text-slate-300/80">Nội dung chuyển tiền</div>
+          <div class="font-medium" id="transferContent">Thanh toán học phí cho sinh viên <span id="transferStudentId"></span></div>
+        </div>
+      </div>
+      
+      <div class="flex justify-between items-center mt-5">
+        <button class="rounded-xl border border-white/10 bg-white/6 px-5 py-3 font-medium hover:bg-white/10" data-close>Quay lại</button>
+        <button id="confirmTransfer" class="rounded-xl bg-gradient-to-r from-brand to-emerald-400 px-5 py-3 font-medium text-emerald-950 hover:scale-[.98] active:scale-95 transition shadow-lg">Tiếp tục</button>
+      </div>
+    </div>
+  </div>
+
   <!-- OTP Modal -->
   <div id="otpModal" class="hidden fixed inset-0 z-50 grid place-items-center p-4">
     <div class="w-full max-w-md rounded-2xl border border-white/12 bg-slate-900/85 backdrop-blur-2xl p-6 shadow-soft zoom">
@@ -431,7 +496,7 @@
 
     function closeAll(){ 
       backdrop.classList.add('hidden'); 
-      ['#loginModal','#otpModal','#welcomeModal','#profileModal'].forEach(id=>$(id).classList.add('hidden')); 
+      ['#loginModal','#otpModal','#welcomeModal','#profileModal','#transferModal'].forEach(id=>$(id).classList.add('hidden')); 
     }
 
     document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', closeAll));
@@ -471,9 +536,7 @@
               <div><span class="text-slate-300/90">MSSV:</span> <b>${student.mssv}</b></div>
               <div><span class="text-slate-300/90">Họ tên:</span> <b>${student.full_name}</b></div>
               <div><span class="text-slate-300/90">Tổng phải nộp:</span> <b>${fmt(invoice.amount_due)}</b></div>
-              <div><span class="text-slate-300/90">Đã nộp:</span> <b>${fmt(invoice.amount_paid)}</b></div>
-              <div class="sm:col-span-2">
-                <span class="text-slate-300/90">Trạng thái:</span>
+              <div><span class="text-slate-300/90">Trạng thái:</span>
                 <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold shadow-md ${tagColor(invoice.status)}">
                   ${statusIcon(invoice.status)} ${invoice.status}
                 </span>
@@ -552,7 +615,25 @@
           smoothScrollTo("student-search");
           return;
         }
-
+        
+        // Populate transfer modal information
+        const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+        $('#transferAmount').textContent = userDetails.AvailableBalance ? fmt(userDetails.AvailableBalance) : '-';
+        $('#transferAmountValue').textContent = lastLookup?.invoice?.amount_due ? fmt(lastLookup.invoice.amount_due) : '-';
+        $('#transferStudentId').textContent = mssv;
+        
+        // Show transfer modal instead of going directly to OTP
+        openModal('#transferModal');
+      } catch (e) {
+        $('#payErr').textContent = e.message || 'Lỗi không xác định';
+      }
+    }
+    
+    // Handle the transfer confirmation before proceeding to OTP
+    $('#confirmTransfer').addEventListener('click', async () => {
+      try {
+        const mssv = $('#mssv').value.trim();
+        
         const res = await authFetch('/api/payments/otp', {
           method: 'POST',
           body: JSON.stringify({ mssv })
@@ -569,6 +650,7 @@
         $('#doConfirm').disabled = false;
         $('#resendOtp').classList.add("hidden");
 
+        closeAll(); // Close transfer modal
         openModal('#otpModal');
         toast('Đã gửi OTP tới email');
 
@@ -578,11 +660,10 @@
 
         // Focus vào ô OTP đầu tiên
         document.querySelector('.otp-input').focus();
-
       } catch (e) {
         $('#payErr').textContent = e.message || 'Lỗi không xác định';
       }
-    }
+    });
 
     function startOtpCountdown() {
       clearInterval(otpTimerInterval);
@@ -736,6 +817,7 @@
     // Password toggle
     $('#togglePassword').addEventListener('click', ()=> {
       const passwordInput = $('#lgPass');
+
       const eyeIcon = $('#eyeIcon');
       const isPassword = passwordInput.type === 'password';
       
@@ -925,9 +1007,7 @@
               <div><span class="text-slate-300/90">MSSV:</span> <b>${student.mssv}</b></div>
               <div><span class="text-slate-300/90">Họ tên:</span> <b>${student.full_name}</b></div>
               <div><span class="text-slate-300/90">Tổng phải nộp:</span> <b>${fmt(invoice.amount_due)}</b></div>
-              <div><span class="text-slate-300/90">Đã nộp:</span> <b>${fmt(invoice.amount_paid)}</b></div>
-              <div class="sm:col-span-2">
-                <span class="text-slate-300/90">Trạng thái:</span>
+              <div><span class="text-slate-300/90">Trạng thái:</span>
                 <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold shadow-md ${tagColor(invoice.status)}">
                   ${statusIcon(invoice.status)} ${invoice.status}
                 </span>
