@@ -109,7 +109,6 @@ app.post("/api/login", (req, res) => {
             if (password === user.Pwd) {
                 req.session.userid = user.UserID;
                 req.session.username = user.Username;
-                console.log(`User ${user.Username} logged in successfully.`);
 
                 // return information user json
                 const sql2 = "select * from Users where UserID = ?";
@@ -311,12 +310,33 @@ app.post("/api/payments/:paymentId/confirm", (req, res) => {
                             // commit transaction
                             accountDB.commit(errCommit => {
                                 if (errCommit) return res.status(500).json({ message: "Commit thất bại" });
+                                // Gửi email biên lai
+                                const template = fs.readFileSync(path.join(__dirname, "views", "receiptEmail.html"), "utf8");
+                                const htmlReceipt = template
+                                .replace("{{FULLNAME}}", user.Fullname)
+                                .replace("{{MSSV}}", mssv)
+                                .replace("{{AMOUNT}}", feeAmount.toLocaleString("vi-VN"))
+                                .replace("{{TRANSACTION_ID}}", transactionId)
+                                .replace("{{DATE}}", new Date().toLocaleString("vi-VN"));
+
+                                const transporter = nodemailer.createTransport({
+                                    service: "gmail",
+                                    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+                                });
+
+                                transporter.sendMail({
+                                    from: process.env.EMAIL_USER,
+                                    to: user.Email,
+                                    subject: "Biên lai thanh toán học phí",
+                                    html: htmlReceipt,
+                                });
                                 return res.json({
                                     message: "Thanh toán thành công",
                                     amount: feeAmount,
                                     newBalance,
                                     transactionId
                                 });
+
                             });
                         });
                     });
@@ -346,6 +366,9 @@ app.get("/api/balance/:userId", (req, res) => {
         res.json({ availableBalance: results[0].AvailableBalance });
     });
 });
+
+
+  
 
 // port
 const port = process.env.PORT || 8080;

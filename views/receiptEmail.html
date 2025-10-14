@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 0;
+      margin: 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+    .header {
+      background: linear-gradient(135deg, #4f46e5, #3b82f6);
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .content {
+      padding: 20px;
+      color: #374151;
+      line-height: 1.6;
+    }
+    .receipt-box {
+      margin: 20px auto;
+      padding: 15px;
+      background: #eff6ff;
+      border: 2px dashed #3b82f6;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    .receipt-box p {
+      margin: 6px 0;
+    }
+    .highlight {
+      color: #2563eb;
+      font-weight: bold;
+    }
+    .footer {
+      background: #f9fafb;
+      padding: 15px;
+      font-size: 12px;
+      color: #6b7280;
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Biên Lai Thanh Toán Học Phí</h2>
+    </div>
+    <div class="content">
+      <p>Xin chào <strong>{{FULLNAME}}</strong>,</p>
+      <p>Chúc mừng! Bạn đã <span class="highlight">thanh toán thành công</span> học phí cho sinh viên có mã số <strong>{{MSSV}}</strong>.</p>
+
+      <div class="receipt-box">
+        <p><strong>Mã giao dịch:</strong> {{TRANSACTION_ID}}</p>
+        <p><strong>Ngày thanh toán:</strong> {{DATE}}</p>
+        <p><strong>Số tiền đã thanh toán:</strong> <span class="highlight">{{AMOUNT}} ₫</span></p>
+      </div>
+
+      <p>Vui lòng lưu lại email này như một biên lai điện tử hợp lệ.  
+      Mọi thắc mắc vui lòng liên hệ bộ phận hỗ trợ tài chính sinh viên.</p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 iBanking - Hệ thống thanh toán học phí an toàn</p>
+    </div>
+  </div>
+</body>
+</html>
