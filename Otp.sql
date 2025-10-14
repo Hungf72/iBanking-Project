@@ -4,6 +4,7 @@ USE OtpDB;
 -- Bảng Otp
 CREATE TABLE Otp (
     OtpID INT PRIMARY KEY,
+    ImpedanceKey VARCHAR(64),
     Email VARCHAR(100),
     OtpCode VARCHAR(10),
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,

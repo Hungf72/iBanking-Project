@@ -4,7 +4,7 @@ const path = require("path");
 require("dotenv").config(); 
 const bodyParser = require("body-parser");
 const mysql = require("mysql2");
-const { randomInt } = require("crypto");
+const { randomInt, randomUUID } = require("crypto");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 
@@ -194,12 +194,13 @@ app.post("/api/payments/otp", (req, res) => {
         otpDB.query("SELECT * FROM Otp WHERE Email = ? AND ExpiredAt > NOW() AND State = FALSE",[userEmail],(err, existingOtp) => {
                 if (err) return res.status(500).json({ message: "Internal server error" });
 
-                let otp, otp_id, payment_id, expiredAt;
+                let otp, otp_id, payment_id, expiredAt, impedanceKey;
 
                 if (existingOtp.length > 0) {
                     otp = existingOtp[0].OtpCode;
                     otp_id = existingOtp[0].OtpID;
                     payment_id = randomInt(100000, 1000000).toString();
+                    impedanceKey = existingOtp.ImpedanceKey;
                     expiredAt = existingOtp[0].ExpiredAt;
                 } 
                 else {
@@ -207,10 +208,11 @@ app.post("/api/payments/otp", (req, res) => {
                     otp_id = randomInt(100000, 1000000).toString();
                     payment_id = randomInt(100000, 1000000).toString();
                     expiredAt = new Date(Date.now() + 60 * 1000);
+                    impedanceKey = randomUUID();
 
                     otpDB.query(
-                        "INSERT INTO Otp (OtpID, Email, OtpCode, ExpiredAt) VALUES (?, ?, ?, ?)",
-                        [otp_id, userEmail, otp, expiredAt],
+                        "INSERT INTO Otp (OtpID, ImpedanceKey, Email, OtpCode, ExpiredAt) VALUES (?, ?, ?, ?)",
+                        [otp_id, impedanceKey, userEmail, otp, expiredAt],
                         (err2) => { if (err2) console.error("Lỗi lưu OTP:", err2); }
                     );
 
@@ -245,6 +247,7 @@ app.post("/api/payments/otp", (req, res) => {
                     payment_id,
                     otp_id,
                     expiredAt,
+                    impedanceKey,
                     message: `Nhập mã OTP (6 chữ số) vừa được gửi ${userEmail}.`
                 });
             }
@@ -255,7 +258,7 @@ app.post("/api/payments/otp", (req, res) => {
 // confirm otp
 app.post("/api/payments/:paymentId/confirm", (req, res) => {
     const paymentId = req.params.paymentId;
-    const { otp, mssv } = req.body;
+    const { otp, mssv, impedanceKey } = req.body;
     const otp_id = req.query.otp_id;
 
     if (!otp_id || !otp || !mssv) {
@@ -263,7 +266,7 @@ app.post("/api/payments/:paymentId/confirm", (req, res) => {
     }
 
     // Kiểm tra OTP còn hiệu lực
-    otpDB.query("SELECT * FROM Otp WHERE OtpID = ? AND State = FALSE AND ExpiredAt > NOW()",[otp_id],(err, results) => {
+    otpDB.query("SELECT * FROM Otp WHERE OtpID = ? AND ImpedanceKey = ? AND State = FALSE AND ExpiredAt > NOW()",[otp_id, impedanceKey],(err, results) => {
         if (err) return res.status(500).json({ message: "Internal server error" });
         if (results.length === 0) return res.status(400).json({ message: "OTP không hợp lệ hoặc đã hết hạn" });
 
@@ -367,8 +370,6 @@ app.get("/api/balance/:userId", (req, res) => {
     });
 });
 
-
-  
 
 // port
 const port = process.env.PORT || 8080;
