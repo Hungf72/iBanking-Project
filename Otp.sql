@@ -1,15 +1,24 @@
 CREATE DATABASE OtpDB;
 USE OtpDB;
 
+-- Bảng IdempotencyKey
+CREATE TABLE IdempotencyKey (
+    KeyUUID VARCHAR(128) PRIMARY KEY,
+    UserID VARCHAR(100),
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    LastUsedTx VARCHAR(100),
+);
+
 -- Bảng Otp
 CREATE TABLE Otp (
     OtpID INT PRIMARY KEY,
-    ImpedanceKey VARCHAR(64),
+    IdempotencyKey VARCHAR(128),
     Email VARCHAR(100),
     OtpCode VARCHAR(10),
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     ExpiredAt DATETIME,
-    State BOOLEAN DEFAULT FALSE
+    State BOOLEAN DEFAULT FALSE,
+    CONSTRAINT fk_otp_idempotency FOREIGN KEY (IdempotencyKey) REFERENCES IdempotencyKey(KeyUUID) ON DELETE CASCADE
 );
 
 

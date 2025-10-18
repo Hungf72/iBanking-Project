@@ -653,7 +653,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data?.message || 'Gửi OTP thất bại');
 
-        lastPayment = { id: data.payment_id, otp_id: data.otp_id, impedanceKey: data.impedanceKey };
+        lastPayment = { id: data.payment_id, otp_id: data.otp_id, idempotencyKey: data.idempotencyKey };
 
         // Cập nhật giao diện
         $('#otpHint').textContent = `${data.message}`;
@@ -801,7 +801,7 @@
             { 
               otp: code, 
               mssv: currentSID, 
-              impedanceKey: lastPayment.impedanceKey
+              impedanceKey: lastPayment.idempotencyKey
             })
         });
 

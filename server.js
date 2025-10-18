@@ -175,6 +175,8 @@ app.get("/api/students", (req, res) => {
 // otp
 app.post("/api/payments/otp", (req, res) => {
     const mssv = req.body.mssv;
+    const clientIdempotencyKey = req.body.idempotencyKey || null;
+    
     if (!mssv) return res.status(400).json({ message: "Thiếu MSSV" });
 
     accountDB.query("SELECT Email FROM Users WHERE UserID = ?", [req.session.userid], (err, results) => {
@@ -182,41 +184,93 @@ app.post("/api/payments/otp", (req, res) => {
         if (results.length === 0) return res.status(404).json({ message: "Không tìm thấy email" });
 
         const userEmail = results[0].Email;
+        const userId = req.session.userid;
 
-        // Xóa OTP hết hạn hoặc đã mark
-        otpDB.query(
-            "DELETE FROM Otp WHERE Email = ? AND (ExpiredAt <= NOW() OR State = TRUE)",
-            [userEmail],
-            (err) => { if (err) console.error("Lỗi xóa OTP hết hạn:", err); }
-        );
+        // Check if client provided an idempotency key and if it exists
+        if (clientIdempotencyKey) {
+            otpDB.query(
+                "SELECT * FROM IdempotencyKey WHERE KeyUUID = ? AND UserID = ?",
+                [clientIdempotencyKey, userId],
+                (errKey, keyRows) => {
+                    if (errKey) return res.status(500).json({ message: "Internal server error" });
+                    
+                    if (keyRows.length > 0) {
+                        // Key exists, try to reuse existing OTP
+                        otpDB.query(
+                            "SELECT * FROM Otp WHERE IdempotencyKey = ? AND ExpiredAt > NOW() AND State = FALSE",
+                            [clientIdempotencyKey],
+                            (errOtp, otpRows) => {
+                                if (errOtp) return res.status(500).json({ message: "Internal server error" });
+                                
+                                if (otpRows.length > 0) {
+                                    // Return existing OTP
+                                    const existingOtp = otpRows[0];
+                                    return res.json({
+                                        payment_id: keyRows[0].LastUsedTx || randomInt(100000, 1000000).toString(),
+                                        otp_id: existingOtp.OtpID,
+                                        expiredAt: existingOtp.ExpiredAt,
+                                        idempotencyKey: clientIdempotencyKey,
+                                        message: `Nhập mã OTP (6 chữ số) vừa được gửi ${userEmail}.`
+                                    });
+                                } else {
+                                    // Key exists but OTP expired, create new OTP with same key
+                                    createNewOtp(clientIdempotencyKey);
+                                }
+                            }
+                        );
+                    } else {
+                        // Key doesn't exist, create new one
+                        createIdempotencyKeyAndOtp(null);
+                    }
+                }
+            );
+        } else {
+            // No client key provided, create new one
+            createIdempotencyKeyAndOtp(null);
+        }
 
-        // Kiểm tra OTP chưa hết hạn
-        otpDB.query("SELECT * FROM Otp WHERE Email = ? AND ExpiredAt > NOW() AND State = FALSE",[userEmail],(err, existingOtp) => {
-                if (err) return res.status(500).json({ message: "Internal server error" });
+        function createIdempotencyKeyAndOtp(existingKey) {
+            const idempotencyKey = existingKey || randomUUID();
+            const payment_id = randomInt(100000, 1000000).toString();
+            
+            // Insert new IdempotencyKey
+            otpDB.query(
+                "INSERT INTO IdempotencyKey (KeyUUID, UserID, LastUsedTx) VALUES (?, ?, ?)",
+                [idempotencyKey, userId, payment_id],
+                (errInsertKey) => {
+                    if (errInsertKey) {
+                        console.error("Lỗi tạo IdempotencyKey:", errInsertKey);
+                        return res.status(500).json({ message: "Internal server error" });
+                    }
+                    createNewOtp(idempotencyKey, payment_id);
+                }
+            );
+        }
 
-                let otp, otp_id, payment_id, expiredAt, impedanceKey;
+        function createNewOtp(idempotencyKey, payment_id = null) {
+            if (!payment_id) payment_id = randomInt(100000, 1000000).toString();
+            
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otp_id = randomInt(100000, 1000000).toString();
+            const expiredAt = new Date(Date.now() + 60 * 1000);
 
-                if (existingOtp.length > 0) {
-                    otp = existingOtp[0].OtpCode;
-                    otp_id = existingOtp[0].OtpID;
-                    payment_id = randomInt(100000, 1000000).toString();
-                    impedanceKey = existingOtp.ImpedanceKey;
-                    expiredAt = existingOtp[0].ExpiredAt;
-                } 
-                else {
-                    otp = Math.floor(100000 + Math.random() * 900000).toString();
-                    otp_id = randomInt(100000, 1000000).toString();
-                    payment_id = randomInt(100000, 1000000).toString();
-                    expiredAt = new Date(Date.now() + 60 * 1000);
-                    impedanceKey = randomUUID();
+            otpDB.query(
+                "INSERT INTO Otp (OtpID, IdempotencyKey, Email, OtpCode, ExpiredAt) VALUES (?, ?, ?, ?, ?)",
+                [otp_id, idempotencyKey, userEmail, otp, expiredAt],
+                (err2) => { 
+                    if (err2) {
+                        console.error("Lỗi lưu OTP:", err2);
+                        return res.status(500).json({ message: "Internal server error" });
+                    }
 
+                    // Update LastUsedTx in IdempotencyKey
                     otpDB.query(
-                        "INSERT INTO Otp (OtpID, ImpedanceKey, Email, OtpCode, ExpiredAt) VALUES (?, ?, ?, ?)",
-                        [otp_id, impedanceKey, userEmail, otp, expiredAt],
-                        (err2) => { if (err2) console.error("Lỗi lưu OTP:", err2); }
+                        "UPDATE IdempotencyKey SET LastUsedTx = ? WHERE KeyUUID = ?",
+                        [payment_id, idempotencyKey],
+                        (errUpdate) => { if (errUpdate) console.error("Lỗi cập nhật LastUsedTx:", errUpdate); }
                     );
 
-                    // Tự động mark State = TRUE sau 60s
+                    // Auto mark State = TRUE after 60s
                     const delay = expiredAt.getTime() - Date.now();
                     setTimeout(() => {
                         otpDB.query(
@@ -225,128 +279,180 @@ app.post("/api/payments/otp", (req, res) => {
                             (err3) => { if (err3) console.error("Lỗi mark OTP hết hạn:", err3); }
                         );
                     }, delay);
+
+                    // Send OTP email
+                    const template = fs.readFileSync(path.join(__dirname, "views", "otpEmail.html"), "utf8");
+                    const htmlContent = template.replace("{{OTP_CODE}}", otp);
+
+                    const transporter = nodemailer.createTransport({
+                        service: "gmail",
+                        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+                    });
+
+                    transporter.sendMail({
+                        from: process.env.EMAIL_USER,
+                        to: userEmail,
+                        subject: "Mã OTP thanh toán học phí",
+                        html: htmlContent,
+                    }).catch(err => console.error("Lỗi gửi email:", err));
+
+                    res.json({
+                        payment_id,
+                        otp_id,
+                        expiredAt,
+                        idempotencyKey,
+                        message: `Nhập mã OTP (6 chữ số) vừa được gửi ${userEmail}.`
+                    });
                 }
-
-                // Gửi email OTP
-                const template = fs.readFileSync(path.join(__dirname, "views", "otpEmail.html"), "utf8");
-                const htmlContent = template.replace("{{OTP_CODE}}", otp);
-
-                const transporter = nodemailer.createTransport({
-                    service: "gmail",
-                    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-                });
-
-                transporter.sendMail({
-                    from: process.env.EMAIL_USER,
-                    to: userEmail,
-                    subject: "Mã OTP thanh toán học phí",
-                    html: htmlContent,
-                }).catch(err => console.error("Lỗi gửi email:", err));
-
-                res.json({
-                    payment_id,
-                    otp_id,
-                    expiredAt,
-                    impedanceKey,
-                    message: `Nhập mã OTP (6 chữ số) vừa được gửi ${userEmail}.`
-                });
-            }
-        );
+            );
+        }
     });
 });
 
 // confirm otp
 app.post("/api/payments/:paymentId/confirm", (req, res) => {
     const paymentId = req.params.paymentId;
-    const { otp, mssv, impedanceKey } = req.body;
+    const { otp, mssv, idempotencyKey } = req.body;
     const otp_id = req.query.otp_id;
 
     if (!otp_id || !otp || !mssv) {
         return res.status(400).json({ message: "Thiếu otp hoặc otp_id hoặc mssv" });
     }
 
-    // Kiểm tra OTP còn hiệu lực
-    otpDB.query("SELECT * FROM Otp WHERE OtpID = ? AND ImpedanceKey = ? AND State = FALSE AND ExpiredAt > NOW()",[otp_id, impedanceKey],(err, results) => {
-        if (err) return res.status(500).json({ message: "Internal server error" });
-        if (results.length === 0) return res.status(400).json({ message: "OTP không hợp lệ hoặc đã hết hạn" });
+    if (!idempotencyKey) {
+        return res.status(400).json({ message: "Thiếu idempotencyKey" });
+    }
 
-        const record = results[0];
-        if (record.OtpCode !== otp) return res.status(400).json({ message: "OTP không đúng" });
+    // Validate idempotency key belongs to current user
+    const userId = req.session.userid;
+    otpDB.query(
+        "SELECT * FROM IdempotencyKey WHERE KeyUUID = ?",
+        [idempotencyKey],
+        (errKey, keyResults) => {
+            if (errKey) return res.status(500).json({ message: "Internal server error" });
+            if (keyResults.length === 0) return res.status(400).json({ message: "IdempotencyKey không hợp lệ" });
+            
+            const keyRecord = keyResults[0];
+            if (keyRecord.UserID && keyRecord.UserID !== userId) {
+                return res.status(403).json({ message: "IdempotencyKey không thuộc về người dùng này" });
+            }
 
-        // delete OTP đã sử dụng
-        otpDB.query("Delete From Otp WHERE OtpID = ?",[otp_id],(err) => {
-            if (err) console.error("Lỗi delete OTP đã sử dụng:", err);
-        });
+            // Check OTP validity
+            otpDB.query(
+                "SELECT * FROM Otp WHERE OtpID = ? AND IdempotencyKey = ? AND State = FALSE AND ExpiredAt > NOW()",
+                [otp_id, idempotencyKey],
+                (err, results) => {
+                    if (err) return res.status(500).json({ message: "Internal server error" });
+                    if (results.length === 0) return res.status(400).json({ message: "OTP không hợp lệ hoặc đã hết hạn" });
 
-        const email = record.Email;
+                    const record = results[0];
+                    if (record.OtpCode !== otp) return res.status(400).json({ message: "OTP không đúng" });
 
-        // Lấy User từ AccountDB
-        accountDB.query("SELECT UserID, Fullname, AvailableBalance, Email FROM Users WHERE Email = ?",[email],(err, users) => {
-            if (err || users.length === 0) return res.status(404).json({ message: "Không tìm thấy tài khoản" });
+                    // Mark OTP as used
+                    otpDB.query(
+                        "UPDATE Otp SET State = TRUE WHERE OtpID = ?",
+                        [otp_id],
+                        (err) => { if (err) console.error("Lỗi mark OTP đã sử dụng:", err); }
+                    );
 
-            const user = users[0];
+                    const email = record.Email;
 
-            // Lấy Fee từ FeeDB
-            feeDB.query("SELECT Fee FROM Fee WHERE StudentID = ?",[mssv],(err2, fees) => {
-                if (err2 || fees.length === 0) return res.status(404).json({ message: "Không tìm thấy học phí sinh viên" });
+                    // Get User from AccountDB
+                    accountDB.query(
+                        "SELECT UserID, Fullname, AvailableBalance, Email FROM Users WHERE Email = ?",
+                        [email],
+                        (err, users) => {
+                            if (err || users.length === 0) return res.status(404).json({ message: "Không tìm thấy tài khoản" });
 
-                const feeAmount = Number(fees[0].Fee);
-                const balance = Number(user.AvailableBalance);
+                            const user = users[0];
 
-                if (balance < feeAmount) return res.status(400).json({ message: "Số dư không đủ để thanh toán" });
+                            // Get Fee from FeeDB
+                            feeDB.query(
+                                "SELECT Fee FROM Fee WHERE StudentID = ?",
+                                [mssv],
+                                (err2, fees) => {
+                                    if (err2 || fees.length === 0) return res.status(404).json({ message: "Không tìm thấy học phí sinh viên" });
 
-                const newBalance = balance - feeAmount;
+                                    const feeAmount = Number(fees[0].Fee);
+                                    const balance = Number(user.AvailableBalance);
 
-                // insert transaction
-                accountDB.query("INSERT INTO TransactionInfo (TransactionID, UserID, TransactionDate, StudentID, Amount, State) VALUES (?, ?, Now(), ?, ?, True)",[paymentId ,user.UserID, mssv, feeAmount],(errTr, resultTr) => {
-                    if (errTr) return res.status(500).json({ message: "Tạo giao dịch thất bại" });
+                                    if (balance < feeAmount) return res.status(400).json({ message: "Số dư không đủ để thanh toán" });
 
-                    const transactionId = resultTr.insertId;
-                    // update fee
-                    feeDB.query("UPDATE Fee SET Fee = 0 WHERE StudentID = ?",[mssv],(errFee) => {
-                        if (errFee) return res.status(500).json({ message: "Cập nhật học phí thất bại" });
+                                    const newBalance = balance - feeAmount;
 
-                        // update balance
-                        accountDB.query("UPDATE Users SET AvailableBalance = ? WHERE UserID = ?",[newBalance, user.UserID],(errAcc) => {
-                            if (errAcc) return res.status(500).json({ message: "Cập nhật số dư thất bại" });
+                                    // Insert transaction
+                                    accountDB.query(
+                                        "INSERT INTO TransactionInfo (TransactionID, UserID, TransactionDate, StudentID, Amount, State) VALUES (?, ?, Now(), ?, ?, True)",
+                                        [paymentId, user.UserID, mssv, feeAmount],
+                                        (errTr, resultTr) => {
+                                            if (errTr) return res.status(500).json({ message: "Tạo giao dịch thất bại" });
 
-                            // commit transaction
-                            accountDB.commit(errCommit => {
-                                if (errCommit) return res.status(500).json({ message: "Commit thất bại" });
-                                // Gửi email biên lai
-                                const template = fs.readFileSync(path.join(__dirname, "views", "receiptEmail.html"), "utf8");
-                                const htmlReceipt = template
-                                .replace("{{FULLNAME}}", user.Fullname)
-                                .replace("{{MSSV}}", mssv)
-                                .replace("{{AMOUNT}}", feeAmount.toLocaleString("vi-VN"))
-                                .replace("{{TRANSACTION_ID}}", transactionId)
-                                .replace("{{DATE}}", new Date().toLocaleString("vi-VN"));
+                                            const transactionId = resultTr.insertId;
 
-                                const transporter = nodemailer.createTransport({
-                                    service: "gmail",
-                                    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-                                });
+                                            // Update fee
+                                            feeDB.query(
+                                                "UPDATE Fee SET Fee = 0, State = 1 WHERE StudentID = ?",
+                                                [mssv],
+                                                (errFee) => {
+                                                    if (errFee) return res.status(500).json({ message: "Cập nhật học phí thất bại" });
 
-                                transporter.sendMail({
-                                    from: process.env.EMAIL_USER,
-                                    to: user.Email,
-                                    subject: "Biên lai thanh toán học phí",
-                                    html: htmlReceipt,
-                                });
-                                return res.json({
-                                    message: "Thanh toán thành công",
-                                    amount: feeAmount,
-                                    newBalance,
-                                    transactionId
-                                });
+                                                    // Update balance
+                                                    accountDB.query(
+                                                        "UPDATE Users SET AvailableBalance = ? WHERE UserID = ?",
+                                                        [newBalance, user.UserID],
+                                                        (errAcc) => {
+                                                            if (errAcc) return res.status(500).json({ message: "Cập nhật số dư thất bại" });
 
-                            });
-                        });
-                    });
-                });
-            });
-        });
-    });
+                                                            // Update IdempotencyKey with transaction ID
+                                                            otpDB.query(
+                                                                "UPDATE IdempotencyKey SET LastUsedTx = ? WHERE KeyUUID = ?",
+                                                                [transactionId.toString(), idempotencyKey],
+                                                                (errKeyUpdate) => { 
+                                                                    if (errKeyUpdate) console.error("Lỗi cập nhật IdempotencyKey:", errKeyUpdate); 
+                                                                }
+                                                            );
+
+                                                            // Send receipt email
+                                                            const template = fs.readFileSync(path.join(__dirname, "views", "receiptEmail.html"), "utf8");
+                                                            const htmlReceipt = template
+                                                                .replace("{{FULLNAME}}", user.Fullname)
+                                                                .replace("{{MSSV}}", mssv)
+                                                                .replace("{{AMOUNT}}", feeAmount.toLocaleString("vi-VN"))
+                                                                .replace("{{TRANSACTION_ID}}", transactionId)
+                                                                .replace("{{DATE}}", new Date().toLocaleString("vi-VN"));
+
+                                                            const transporter = nodemailer.createTransport({
+                                                                service: "gmail",
+                                                                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+                                                            });
+
+                                                            transporter.sendMail({
+                                                                from: process.env.EMAIL_USER,
+                                                                to: user.Email,
+                                                                subject: "Biên lai thanh toán học phí",
+                                                                html: htmlReceipt,
+                                                            }).catch(err => console.error("Lỗi gửi email biên lai:", err));
+
+                                                            return res.json({
+                                                                message: "Thanh toán thành công",
+                                                                amount: feeAmount,
+                                                                newBalance,
+                                                                transactionId
+                                                            });
+                                                        }
+                                                    );
+                                                }
+                                            );
+                                        }
+                                    );
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        }
+    );
 });
 
 // get transactions
