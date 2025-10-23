@@ -6,7 +6,7 @@ CREATE TABLE IdempotencyKey (
     KeyUUID VARCHAR(128) PRIMARY KEY,
     UserID VARCHAR(100),
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    LastUsedTx VARCHAR(100),
+    LastUsedTx VARCHAR(100)
 );
 
 -- Bảng Otp

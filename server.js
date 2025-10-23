@@ -130,7 +130,7 @@ app.post("/api/login", (req, res) => {
             }
         } 
         else {
-            return res.status(404).json({ message: "No user found with that username" });
+            return res.status(404).json({ message: "Invalid username" });
         }
     });
 });
