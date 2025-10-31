@@ -11,10 +11,10 @@ CREATE TABLE IdempotencyKey (
 
 -- Bảng Otp
 CREATE TABLE Otp (
-    OtpID INT PRIMARY KEY,
+    OtpID VARCHAR(6) PRIMARY KEY,
     IdempotencyKey VARCHAR(128),
     Email VARCHAR(100),
-    OtpCode VARCHAR(10),
+    OtpCode VARCHAR(6),
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     ExpiredAt DATETIME,
     State BOOLEAN DEFAULT FALSE,
