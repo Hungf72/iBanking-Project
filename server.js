@@ -179,14 +179,16 @@ app.post("/api/payments/otp", (req, res) => {
     const mssv = req.body.mssv;
     const clientIdempotencyKey = req.body.idempotencyKey;
 
+    const authHeader = req.headers.authorization;
+    const userId = authHeader?.split("-").pop(); 
+
     if (!mssv) return res.status(400).json({ message: "Thiếu MSSV" });
 
-    accountDB.query("SELECT Email FROM Users WHERE UserID = ?", [req.session.userid], (err, results) => {
+    accountDB.query("SELECT Email FROM Users WHERE UserID = ?", [userId], (err, results) => {
         if (err) return res.status(500).json({ message: "Internal server error" });
         if (results.length === 0) return res.status(404).json({ message: "Không tìm thấy email" });
 
         const userEmail = results[0].Email;
-        const userId = req.header.authorization ? req.session.userid : null;
 
         feeDB.query("SELECT PaymentID FROM Fee WHERE StudentID = ?", [mssv], (errFee, feeRows) => {
             if (errFee) return res.status(500).json({ message: "Internal server error" });
@@ -404,7 +406,9 @@ app.post("/api/payments/:paymentId/confirm", (req, res) => {
         }
 
         // Validate idempotency key belongs to current user
-        const userId = req.session.userid;
+        const authHeader = req.headers.authorization;
+        const userId = authHeader?.split("-").pop(); 
+        
         otpDB.query(
             "SELECT * FROM IdempotencyKey WHERE KeyUUID = ?",
             [idempotencyKey],
